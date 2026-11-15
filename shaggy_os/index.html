@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shaggy OS 2.0</title><meta name="theme-color" content="#101b1b">
+<style>
+:root{color-scheme:dark;--bg:#0d1619;--panel:#152325;--panel2:#1e3031;--ink:#eaf3ec;--muted:#91aaa5;--accent:#8eddaf;--border:#314645}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--border);background:#263d3b;color:var(--ink);padding:12px 15px;border-radius:12px}
+button:hover{background:#34524c}button.primary{background:var(--accent);color:#10251c;border-color:transparent;font-weight:750}
+button.selected{border-color:var(--accent);color:var(--accent)}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input,textarea{width:100%;border:1px solid var(--border);border-radius:10px;background:#0d1b1f;color:var(--ink);padding:12px}
+h1,h2,h3,p{margin:0}small,.muted{color:var(--muted)}h1{font-size:clamp(25px,3vw,37px);letter-spacing:-1px}h2{font-size:19px;letter-spacing:-.3px}
+.shell{max-width:1280px;margin:auto;padding:26px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px}
+.sidebar{background:#111e20;border:1px solid var(--border);border-radius:20px;padding:22px;min-height:85vh}
+.brand{font-weight:850;letter-spacing:.7px;font-size:19px;display:flex;align-items:center;gap:11px}
+.emblem{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#284d3b;color:var(--accent);font-size:22px}
+.sub{display:block;font-size:10px;color:var(--muted);letter-spacing:2px;font-weight:600;margin-top:4px}
+.nav{display:grid;gap:8px;margin-top:40px}.nav button{width:100%;text-align:left;border:0;background:transparent}.nav button.selected{background:#244238}
+.sidebar-foot{margin-top:45px;font-size:12px;line-height:1.7;color:var(--muted)}
+.main{min-width:0}.headline{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:15px;flex-wrap:wrap}
+.chip{border:1px solid #41604c;border-radius:40px;color:var(--accent);font-size:12px;padding:8px 13px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:15px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:21px;min-width:0}
+.card-label{font-size:12px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:13px}
+.hero{grid-column:span 7;min-height:275px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(130deg,#1e3b32,#17282b 62%)}
+.hero .time{font-size:clamp(53px,8vw,100px);font-weight:300;letter-spacing:-6px;line-height:1}
+.hero .date{color:#b8cec2;font-size:17px}
+.weather{grid-column:span 5;display:flex;flex-direction:column;justify-content:space-between}
+.weather .symbol{font-size:65px;color:#cbdda0}
+.calendar{grid-column:span 7;min-height:180px}.shopping{grid-column:span 5}
+.agent{grid-column:span 12;display:flex;align-items:center;gap:15px;background:#193329}
+.agent-orb{width:53px;height:53px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c0f2cc,#4a9770 50%,#1b3f3a 75%);box-shadow:0 0 20px #5ba37a66;flex:none}
+.agent-copy{flex:1}.agent-copy small{display:block;margin-top:5px}.big-note{font-size:20px;line-height:1.35}
+.control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0 24px}
+.control-grid button{min-height:79px;text-align:left}.control-grid button span{display:block;font-size:12px;color:var(--muted);margin-top:7px}
+.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.stack{display:grid;gap:16px}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+.settings-row input{width:22px;height:22px;accent-color:#8eddaf}
+.kv{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.notice{padding:12px;border:1px solid #5a6245;border-radius:12px;color:#e0dab3;font-size:13px}
+.hidden,[hidden]{display:none!important}#login{max-width:440px;margin:12vh auto;padding:32px}
+#login h1{margin:18px 0 10px}#login p{margin-bottom:18px}
+.tab{display:none}.tab.active{display:block}
+footer.note{font-size:12px;color:var(--muted);margin-top:20px;line-height:1.7}
+a{color:var(--accent)}.err{color:#f7aeaa}.success{color:var(--accent)}
+#displayView{display:none}
+body.display{overflow:hidden;background:radial-gradient(circle at 15% 5%,#1a3833,#0b1519 65%)}
+body.display #login,body.display .shell{display:none!important}
+body.display #displayView{display:block;min-height:100vh;padding:3.2vw}
+.wall-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3vh;gap:12px}
+.wall-top .brand{font-size:clamp(18px,2.3vw,32px)}.wall-top .sub{font-size:clamp(10px,1vw,14px)}
+.wallgrid{display:grid;grid-template-columns:1.3fr .75fr;grid-template-rows:minmax(40vh,auto) minmax(26vh,auto);gap:2vw}
+.wallbox{border:1px solid #2c4943;background:#132726e3;border-radius:2vw;padding:3vw;overflow:hidden}
+.walltime{font-size:clamp(70px,12vw,210px);font-weight:250;line-height:1;letter-spacing:-.07em}
+.walldate{font-size:clamp(18px,2.2vw,36px);color:#b1c6bd}
+.walllabel{font-size:clamp(12px,1.2vw,19px);color:#9fb8ae;letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px}
+.wallmessage{font-size:clamp(25px,3vw,52px);max-width:20ch;line-height:1.22}
+.wallfoot{margin-top:3vh;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#9eb9ab;font-size:clamp(12px,1vw,19px)}
+body.display.mode-Calendar .wallgrid,body.display.mode-Shopping .wallgrid{grid-template-columns:1fr 1fr}
+body.display.agent-takeover .wallgrid{display:none}
+.wall-takeover{display:none;height:75vh;align-items:center;justify-content:center;flex-direction:column;gap:25px}
+body.display.agent-takeover .wall-takeover{display:flex}
+.wall-takeover .agent-orb{width:170px;height:170px;box-shadow:0 0 90px #57966f77}
+.wall-takeover h1{font-size:clamp(40px,5vw,90px)}
+@media(max-width:850px){.shell{grid-template-columns:1fr;padding:14px}.sidebar{min-height:0;padding:13px}.nav{display:flex;overflow:auto;margin-top:16px}.nav button{width:auto;white-space:nowrap}.sidebar-foot{display:none}.hero,.weather,.calendar,.shopping{grid-column:span 12}.hero{min-height:230px}.agent{align-items:flex-start}.card{padding:18px}.headline{margin-bottom:14px}}
+</style></head>
+<body>
+<section id="login" class="card">
+  <div class="brand"><span class="emblem">✳</span><span>SHAGGY<span class="sub">OS 2.0 · PRIVATE CONTROL</span></span></div>
+  <h1>Welcome home.</h1><p class="muted">Sign in with your Shaggy OS display token. This is separate from Shaggy's AI account.</p>
+  <form id="loginForm" class="stack"><input id="token" type="password" placeholder="Display access token" autocomplete="current-password" required><button class="primary">Unlock controls</button></form>
+  <p id="loginError" class="err" style="margin-top:14px" role="alert"></p>
+</section>
+<div class="shell" id="shell" hidden>
+<aside class="sidebar">
+  <div class="brand"><span class="emblem">✳</span><span>SHAGGY<span class="sub">HOUSEHOLD OS</span></span></div>
+  <nav class="nav" id="nav">
+    <button data-tab="home" class="selected">⌂ &nbsp; Overview</button>
+    <button data-tab="display">▣ &nbsp; Display Studio</button>
+    <button data-tab="agent">✧ &nbsp; Shaggy AI</button>
+    <button data-tab="system">⚙ &nbsp; System</button>
+  </nav>
+  <p class="sidebar-foot">Built for your kitchen.<br>Pi display and working browser are independent.<br>Private administration via SSH tunnel.</p>
+</aside>
+<main class="main">
+ <div class="headline"><div><h1 id="heading">Good to have you home.</h1><small id="subtitle">Your home at a glance.</small></div><span class="chip" id="online">● Checking Shaggy</span></div>
+ <section class="tab active" id="tab-home">
+  <div class="grid">
+   <article class="card hero"><div class="card-label">Today · Zeeland</div><div><div class="time" id="clock">--:--</div><div class="date" id="date">Europe/Amsterdam</div></div><small>Shaggy OS · Kitchen display</small></article>
+   <article class="card weather"><div><div class="card-label">Local conditions</div><div class="symbol">☀</div></div><div><h2>Weather</h2><small>Weather source not connected yet</small></div></article>
+   <article class="card calendar"><div class="card-label">Family calendar</div><div class="big-note">Your schedule, without the clutter.</div><p class="muted" style="margin-top:16px">Connect an approved calendar source in a future integration.</p></article>
+   <article class="card shopping"><div class="card-label">Jumbo shopping</div><div class="big-note">Household shopping</div><p class="muted" style="margin-top:16px">Use Shaggy's private browser to sign into Jumbo and prepare carts.</p></article>
+   <article class="card agent"><span class="agent-orb"></span><div class="agent-copy"><strong>Shaggy AI</strong><small id="agentState">Checking AI workstation…</small></div><button id="agentTab" type="button">Open AI panel</button></article>
+  </div>
+ </section>
+ <section class="tab" id="tab-display">
+   <div class="card stack"><div><h2>Display Studio</h2><p class="muted">Select the mode shown on the HDMI kitchen screen. Changes appear within seconds.</p></div>
+   <div class="control-grid" id="modes"></div>
+   <label for="houseMessage">Household announcement</label><textarea rows="3" maxlength="240" id="houseMessage"></textarea>
+   <div><button id="saveMessage" class="primary">Update screen message</button></div>
+   <h2>Visible widgets</h2><div id="widgets"></div>
+   <div class="inline"><button id="overlay" type="button">Show Shaggy takeover</button><button id="normal" type="button">Return to dashboard</button></div>
+   <small id="saveNotice" role="status"></small>
+   </div>
+ </section>
+ <section class="tab" id="tab-agent">
+   <article class="card stack"><h2>Shaggy's private workstation</h2><p>The agent uses a separate persistent Chromium browser on the Pi. It does not share the kitchen display profile.</p>
+   <div class="notice">The AI browser dashboard uses a different service on Pi port 8787. The new display control runs on port 8790. Use an SSH tunnel to access the AI dashboard safely.</div>
+   <p class="muted">From Windows: <code>ssh -N -L 8789:127.0.0.1:8787 shaggy@shaggy.local</code></p>
+   <a href="http://127.0.0.1:8789" target="_blank" rel="noopener noreferrer">Open existing Shaggy AI dashboard</a>
+   <p class="muted">For Jumbo: sign in through the private agent browser, then tell Shaggy to prepare a cart. Checkout remains human-approved.</p></article>
+ </section>
+ <section class="tab" id="tab-system"><div class="card"><h2>Raspberry Pi status</h2><div id="metrics" style="margin-top:17px">Loading device diagnostics…</div></div></section>
+ <footer class="note">SHAGGY OS 2.0 · Hybrid display concept deployed locally. Weather, calendar, photos and remote-domain integration remain separate follow-up features.</footer>
+</main></div>
+<div id="displayView">
+ <header class="wall-top"><div class="brand"><span class="emblem">✳</span><span>SHAGGY<span class="sub">HOME SYSTEM</span></span></div><div class="chip" id="wallStatus">● Starting</div></header>
+ <section class="wallgrid" id="wallGrid">
+   <div class="wallbox"><div class="walllabel">Today · Zeeland</div><div class="walltime" id="wallClock">--:--</div><div class="walldate" id="wallDate">Europe/Amsterdam</div></div>
+   <div class="wallbox"><div class="walllabel" id="wallRightLabel">Household</div><div class="wallmessage" id="wallMessage">Welcome home.</div></div>
+   <div class="wallbox"><div class="walllabel">Family calendar</div><div class="wallmessage" style="font-size:clamp(18px,2vw,38px)">Your day, at a glance.</div><p class="muted" style="margin-top:15px">Calendar connection pending</p></div>
+   <div class="wallbox"><div class="walllabel">Weather &amp; shopping</div><div style="font-size:clamp(22px,2.6vw,46px)">☀ &nbsp; Weather</div><p class="muted" style="margin-top:15px">Live forecast pending</p><hr style="opacity:.2;margin:20px 0"><div style="font-size:clamp(18px,2vw,34px)">Jumbo · Shopping</div></div>
+ </section>
+ <div class="wall-takeover"><div class="agent-orb"></div><h1>Hey, I'm Shaggy.</h1><p style="font-size:24px;color:#a6bfad">Ready when you are.</p></div>
+ <div class="wallfoot"><div id="wallMode">Kitchen</div><div>● Shaggy Pi · Always home</div></div>
+</div>
+<script>
+const isDisplay=location.pathname==='/display';
+const $=s=>document.querySelector(s);
+let settings={};
+const clocks=()=>{
+ const now=new Date();
+ const tm=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'}).format(now);
+ const date=new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'}).format(now);
+ ['#clock','#wallClock'].forEach(s=>{if($(s))$(s).textContent=tm});
+ ['#date','#wallDate'].forEach(s=>{if($(s))$(s).textContent=date});
+};
+clocks();setInterval(clocks,15000);
+async function get(url){let r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('Request failed '+r.status);return r.json()}
+async function post(url,body){let r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Shaggy-OS':'1'},body:JSON.stringify(body)});let v=await r.json();if(!r.ok)throw Error(v.error||'Request failed');return v}
+const modes=['Kitchen','Calendar','Shopping','Photos','Agent','Browser'];
+const widgets={show_clock:'Clock',show_calendar:'Family calendar',show_weather:'Weather',show_jumbo:'Jumbo shopping',show_agent:'AI activity',show_moon:'Moon phase'};
+function render(){
+ if(isDisplay)return;
+ $('#modes').replaceChildren(...modes.map(mode=>{
+   let b=document.createElement('button');b.textContent=mode;b.className=settings.mode===mode?'selected':'';
+   let p=document.createElement('span');p.textContent=mode===settings.mode?'Active mode':'Switch display';b.append(p);
+   b.onclick=()=>save({mode});return b;
+ }));
+ $('#houseMessage').value=settings.message;
+ $('#widgets').replaceChildren(...Object.entries(widgets).map(([key,name])=>{
+   let div=document.createElement('label');div.className='settings-row';
+   let span=document.createElement('span');span.textContent=name;
+   let input=document.createElement('input');input.type='checkbox';input.checked=settings[key];input.onchange=()=>save({[key]:input.checked});
+   div.append(span,input);return div;
+ }));
+}
+async function save(part){
+ try{let result=await post('/api/settings',part);settings=result.settings;render();$('#saveNotice').textContent='✓ Changes saved to the Pi';}
+ catch(e){$('#saveNotice').textContent=e.message}
+}
+function setTab(name){
+ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+name));
+ document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('selected',b.dataset.tab===name));
+ let headings={home:'Good to have you home.',display:'Display Studio',agent:'Shaggy AI workstation',system:'Device & connectivity'};
+ $('#heading').textContent=headings[name]||'Shaggy OS';
+ $('#subtitle').textContent=name==='display'?'Control what appears on the Pi.':'Household command center';
+ if(name==='system')refreshMetrics();
+}
+function applyWall(data){
+ document.body.className='display mode-'+data.mode+(data.agent_overlay?' agent-takeover':'');
+ $('#wallMode').textContent='Display mode: '+data.mode;
+ $('#wallRightLabel').textContent=data.mode==='Shopping'?'Shopping & notes':data.mode==='Agent'?'Shaggy AI':'Household';
+ $('#wallMessage').textContent=data.message;
+ $('#wallStatus').textContent=data.agent_online?'● Shaggy AI online':'● Dashboard online';
+ $('#wallStatus').style.color=data.agent_online?'#8eddaf':'#e5bd88';
+ const tiles=$('#wallGrid').children;
+ tiles[2].style.display=data.show_calendar?'':'none';
+ tiles[3].style.display=(data.show_weather||data.show_jumbo)?'':'none';
+}
+async function refreshDisplay(){try{applyWall(await get('/api/display'))}catch(e){$('#wallStatus').textContent='● Connection lost'}}
+async function refreshMetrics(){
+ try{let m=await get('/api/system');let rows={AI_workstation:m.agent_online?'Connected':'Offline',CPU_temperature:m.temperature_c===null?'Unavailable':m.temperature_c+' °C',RAM_usage:m.ram_used_pct+'%',Disk_usage:m.disk_used_pct+'%',Uptime:m.uptime_hours+' hours',CPU_load:m.load_1m};
+ $('#metrics').replaceChildren(...Object.entries(rows).map(([k,v])=>{
+ let div=document.createElement('div');div.className='kv';let a=document.createElement('span');a.className='muted';a.textContent=k.replaceAll('_',' ');let b=document.createElement('strong');b.textContent=v;div.append(a,b);return div;
+ }));$('#online').textContent=m.agent_online?'● Shaggy AI online':'● Shaggy AI offline';
+ $('#agentState').textContent=m.agent_online?'Agent service responding locally':'Agent not responding on port 8787';
+ }catch(e){$('#metrics').textContent='Status unavailable: '+e.message}
+}
+async function initAdmin(){
+ try{settings=await get('/api/settings');$('#login').hidden=true;$('#shell').hidden=false;render();refreshMetrics()}
+ catch(e){$('#login').hidden=false;$('#shell').hidden=true}
+}
+if(isDisplay){refreshDisplay();setInterval(refreshDisplay,6000)}
+else{
+ $('#loginForm').onsubmit=async e=>{e.preventDefault();try{await post('/api/login',{token:$('#token').value});$('#token').value='';$('#loginError').textContent='';initAdmin()}catch(err){$('#loginError').textContent='Access denied'}};
+ $('#nav').addEventListener('click',e=>{let b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
+ $('#agentTab').onclick=()=>setTab('agent');
+ $('#saveMessage').onclick=()=>save({message:$('#houseMessage').value});
+ $('#overlay').onclick=()=>save({agent_overlay:true});
+ $('#normal').onclick=()=>save({agent_overlay:false});
+ initAdmin();setInterval(()=>{if(!$('#shell').hidden)refreshMetrics()},15000)
+}
+</script></body></html>
