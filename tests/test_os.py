@@ -59,6 +59,17 @@ class ShaggyOSTests(unittest.TestCase):
         _,data,_=self.request("/api/display")
         self.assertEqual(data["mode"],"Shopping")
         self.assertEqual(data["message"],"Dinner ready")
+    def test_calendar_sources_are_persistent_and_validated(self):
+        cookie=self.login()
+        self.assertEqual(self.request("/api/settings",{"calendars":[0,2]},cookie)[0],200)
+        status, data, _ = self.request("/api/display")
+        self.assertEqual(status,200)
+        self.assertEqual(data["calendars"],[0,2])
+        self.assertEqual(self.request("/api/settings",{"calendars":[]},cookie)[0],400)
+        self.assertEqual(self.request("/api/settings",{"calendars":[3]},cookie)[0],400)
+        self.assertEqual(self.request("/api/settings",{"calendars":[0,0]},cookie)[0],400)
+        self.assertEqual(self.request("/api/settings",{"calendars":["0"]},cookie)[0],400)
+
     def test_settings_validation_and_origin(self):
         cookie=self.login()
         self.assertEqual(self.request("/api/settings",{"mode":"bad"},cookie)[0],400)
