@@ -170,7 +170,8 @@ function calendarURL(view,selected){
 function updateCalendarFrames(selected){
  if(!Array.isArray(selected)||!selected.length)selected=[0,1,2];
  const day=calendarURL('AGENDA',selected),month=calendarURL('MONTH',selected);
- [['#wallDay',day],['#wallMonth',month],['#homeDay',day],['#homeMonth',month]].forEach(([target,url])=>{const node=$(target);if(node&&node.getAttribute('src')!==url)node.src=url});
+ const targets=isDisplay?[['#wallDay',day],['#wallMonth',month]]:[['#homeDay',day],['#homeMonth',month]];
+ targets.forEach(([target,url])=>{const node=$(target);if(node&&node.getAttribute('src')!==url)node.src=url});
 }
 
 const widgets={show_clock:'Clock',show_calendar:'Family calendar',show_weather:'Weather',show_jumbo:'Jumbo shopping',show_agent:'AI activity',show_moon:'Moon phase'};
