@@ -60,7 +60,7 @@ if [[ -n "$DESKTOP_USER" && "$DESKTOP_USER" != root ]] && id "$DESKTOP_USER" >/d
   if [[ -f "$KIOSK" ]]; then
     cp -a "$KIOSK" "$KIOSK.backup.$(date +%Y%m%d%H%M%S)"
   else
-    printf '#!/bin/sh\n' > "$KIOSK"
+    printf '#!/bin/sh\n# Preserve Raspberry Pi OS desktop startup when overriding labwc autostart.\nif [ -f /etc/xdg/labwc/autostart ]; then /bin/sh /etc/xdg/labwc/autostart; fi\n' > "$KIOSK"
   fi
   # Idempotent: preserve other desktop autostart commands, append ours just once.
   if ! grep -Fq '/opt/shaggy-os/start-kiosk.sh' "$KIOSK"; then
