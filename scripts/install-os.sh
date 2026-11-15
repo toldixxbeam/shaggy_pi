@@ -60,11 +60,11 @@ if [[ -n "$DESKTOP_USER" && "$DESKTOP_USER" != root ]] && id "$DESKTOP_USER" >/d
   if [[ -f "$KIOSK" ]]; then
     cp -a "$KIOSK" "$KIOSK.backup.$(date +%Y%m%d%H%M%S)"
   else
-    printf '#!/bin/sh\\n' > "$KIOSK"
+    printf '#!/bin/sh\n' > "$KIOSK"
   fi
   # Idempotent: preserve other desktop autostart commands, append ours just once.
   if ! grep -Fq '/opt/shaggy-os/start-kiosk.sh' "$KIOSK"; then
-    printf '\\n# Shaggy OS hybrid kitchen kiosk\\n/opt/shaggy-os/start-kiosk.sh &\\n' >> "$KIOSK"
+    printf '\n# Shaggy OS hybrid kitchen kiosk\n/opt/shaggy-os/start-kiosk.sh &\n' >> "$KIOSK"
   fi
   chown "$DESKTOP_USER:$(id -gn "$DESKTOP_USER")" "$KIOSK"
   chmod 0755 "$KIOSK"
