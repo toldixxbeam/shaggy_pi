@@ -51,3 +51,10 @@ The old `julia.html` embedded Google calendars and periodically reloaded calenda
 The first implementation is committed in `scripts/install-pi.sh`, `scripts/bootstrap.sh`, and `docs/DEPLOYMENT.md`. It stages the existing `shaggy` browser agent on 64-bit Raspberry Pi OS as a separate systemd service with persistent local Chromium, cloud-model requests, token-protected local web control, and data in `/var/lib/shaggypi`.
 
 **Do not consider this a complete kiosk/website migration.** The installer has not been verified on the actual Pi. The existing display remains active. The production domain still points at the current Shaggy service. We must test hardware compatibility, validate browser interaction, set up secure phone access, add an independent kiosk UI, configure credential migration locally, and test rollback before any cutover. Do not treat GitHub-stored secrets as deployable credentials.
+
+
+## Shaggy OS 2.0 hybrid dashboard (new)
+
+The new independent HDMI kiosk and authenticated Display Studio now live in `shaggy_os/`. It does **not** replace the existing AI browser; both run in their own Chromium profiles. Install this additional service on a Pi with the AI agent already installed by following [docs/SHAGGY_OS_2.md](docs/SHAGGY_OS_2.md).
+
+The display service listens on local port **8790**, while the existing AI workstation stays on **8787**. The kitchen screen can remain on while the agent browses. This is an implementation milestone, not the completed remote-domain integration. Calendar, weather, photos and direct Jumbo account data are currently placeholders; the existing Shaggy browser can still handle Jumbo with the owner's authorization.
