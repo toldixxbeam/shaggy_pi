@@ -95,7 +95,9 @@ read the cart and order details and yield the browser to an interactive task.
 
 Agent mirrors the current conversation on HDMI and reads new replies in Shaggy's
 AI-generated Onyx voice through the Pi's configured audio output. Website voice
-mode uses the same speech service and the agent's configured OpenAI key.
+mode uses the same speech service and the agent's configured OpenAI key. Each
+spoken reply plays in one take and is capped at 120 words. Longer replies stay
+readable in the chat. The kiosk uses a transparent cursor theme in labwc.
 Browser mirrors the browser while Shaggy operates
 it. Photos has a dedicated full-screen mode awaiting a photo source.
 

@@ -21,6 +21,10 @@ if [ "$attempt" -ge 30 ]; then
   echo "Shaggy OS kiosk: dashboard service was not ready" >&2
   exit 1
 fi
+if [ -d "$HOME/.local/share/icons/ShaggyInvisible/cursors" ]; then
+  export XCURSOR_THEME=ShaggyInvisible
+  export XCURSOR_PATH="$HOME/.local/share/icons:/usr/share/icons:/usr/share/pixmaps"
+fi
 exec /usr/bin/chromium --ozone-platform=wayland --kiosk --no-first-run \
   --autoplay-policy=no-user-gesture-required \
   --password-store=basic \

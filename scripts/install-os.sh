@@ -57,6 +57,7 @@ if [[ -n "$DESKTOP_USER" && "$DESKTOP_USER" != root ]] && id "$DESKTOP_USER" >/d
   # The earlier XDG-only desktop entry did not start on this system.
   AUTOSTART="$HOME_DIR/.config/labwc"
   install -d -o "$DESKTOP_USER" -g "$(id -gn "$DESKTOP_USER")" -m 0755 "$AUTOSTART"
+  runuser -u "$DESKTOP_USER" -- python3 "$BASE/scripts/configure-kiosk-cursor.py" "$HOME_DIR"
   KIOSK="$AUTOSTART/autostart"
   if [[ -f "$KIOSK" ]]; then
     cp -a "$KIOSK" "$KIOSK.backup.$(date +%Y%m%d%H%M%S)"
