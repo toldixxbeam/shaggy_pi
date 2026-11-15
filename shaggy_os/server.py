@@ -122,7 +122,7 @@ class Handler(BaseHTTPRequestHandler):
             config=get_config()
             return self.send(200, {"mode":config["mode"],"message":config["message"],
                 **{k:config[k] for k in DEFAULT if k.startswith("show_") or k in ("theme","agent_overlay")},
-                "agent_online":agent_runtime()["online"], "agent_busy":agent_runtime()["busy"]})
+                "calendars":config["calendars"], "agent_online":agent_runtime()["online"], "agent_busy":agent_runtime()["busy"]})
         if not self.authenticated(): return self.send(401,{"error":"Authentication required"})
         if route == "/api/settings": return self.send(200,get_config())
         if route == "/api/system": return self.send(200,metrics())
