@@ -156,9 +156,12 @@ const CALENDARS=[
 ];
 let calendarSignature='';
 function calendarURL(view,selected){
- const dates=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replaceAll('-','');
- const following=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Amsterdam'}));following.setDate(following.getDate()+1);
- const next=new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(following).replaceAll('-','');
+ const stamp=date=>{
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return parts.year+parts.month+parts.day;
+ };
+ const dates=stamp(new Date());
+ const next=stamp(new Date(Date.now()+86400000));
  const p=new URLSearchParams({ctz:'Europe/Amsterdam',mode:view,showTitle:'0',showPrint:'0',showTabs:'0',showCalendars:'0',showTz:'0',wkst:'2',bgcolor:'#f7f9f8'});
  if(view==='AGENDA')p.set('dates',dates+'/'+next);
  selected.forEach(i=>{p.append('src',CALENDARS[i].id);p.append('color',CALENDARS[i].color)});
