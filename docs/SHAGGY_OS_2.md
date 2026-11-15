@@ -79,15 +79,35 @@ cd ~/shaggy-pi-build/shaggy_pi && git pull --ff-only && sudo bash scripts/instal
 
 After reconnecting, verify `pgrep -af 'shaggy-os-kiosk|start-kiosk'` and the presence of `~/.config/labwc/autostart`. If the HDMI panel is still blank, inspect `journalctl --user -b` and the graphical session environment; don't touch the independent AI browser service.
 
-## Three original Google calendars: combined day + month (15 Nov 2026)
+## Household display modes
 
-Restored all three calendar identifiers from the original `julia.html`:
-- Julia's Google calendar
-- An imported Google calendar
-- The additional Google group calendar
+Kitchen shows the month on the left and today's agenda on the right. The website
+and HDMI display use the same calendar renderer and the same three sources:
+Julia, Imported and Family. To fetch event data, enable the Google Calendar API
+in the existing OAuth project and connect or reconnect the Google account in
+**AI & browser → Settings → Google APIs**. Use an account with permission to read
+all three calendars. No calendar needs to be made public. Display Studio lets
+you choose which of the available calendars appear.
 
-The **top-left** tile on the Pi and the Shaggy website is a combined **today agenda**, and the **bottom-left** tile is a combined **month**. All three sources are enabled by default. In **Display Studio → Calendar sources**, toggle Julia / Imported / Family individually. Both calendar iframes use the same selection, persisted on the Pi in `display.json`. Updates do not reload iframes every six seconds; only a source/date change triggers the new Google embed URL.
+Groceries reads the saved Jumbo browser session and shows the current cart and
+upcoming order contents. Sign in to Jumbo in Shaggy's browser if prompted. When
+a cart is an edit to a scheduled order, it is identified as such. Jumbo checks
+read the cart and order details and yield the browser to an interactive task.
 
-The calendar views use Google's supported embedded calendar interface, timezone Europe/Amsterdam; Shaggy does not receive OAuth tokens and does not modify calendar events. **Visibility depends on the calendars' Google sharing permissions and on the browser's Google login**, especially for personal calendars. If an embed displays an access error or no events, authorize the intended account and verify its sharing settings. Do not publish private ICS links or grant public visibility without informed consent. The imported feed can lag based on Google's import/update interval.
+Agent mirrors the current conversation on HDMI and reads new replies from the
+Pi's configured audio output. Browser mirrors the browser while Shaggy operates
+it. Photos has a dedicated full-screen mode awaiting a photo source.
 
-To apply to the live system: from Pi SSH, run `cd ~/shaggy-pi-build/shaggy_pi && git pull --ff-only && sudo bash scripts/install-os.sh && sudo bash scripts/install-unified.sh && sudo reboot`. The existing outbound SSH relay reconnects automatically after reboot. The domain's cloud Caddy configuration does not need another change if it already forwards to the Pi portal. Verify today's and this month's events in the browser after the device restarts.
+Install this release from the existing Pi SSH session:
+
+```sh
+cd ~/shaggy-pi-build/shaggy_pi && git pull --ff-only &&
+  bash scripts/bootstrap.sh &&
+  sudo bash scripts/install-os.sh &&
+  sudo bash scripts/install-unified.sh &&
+  sudo reboot
+```
+
+The reboot relaunches the HDMI kiosk with audio playback enabled. After the Pi
+reconnects, open the public dashboard, check events from each calendar, verify
+the two Jumbo lists, and try a chat reply in Agent mode with the speaker on.

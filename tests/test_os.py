@@ -55,10 +55,18 @@ class ShaggyOSTests(unittest.TestCase):
     def test_login_and_change_mode(self):
         self.assertEqual(self.request("/api/login",{"token":"wrong"})[0],401)
         cookie=self.login()
-        self.assertEqual(self.request("/api/settings",{"mode":"Shopping","message":"Dinner ready"},cookie)[0],200)
+        self.assertEqual(self.request("/api/settings",{"mode":"Groceries","message":"Dinner ready"},cookie)[0],200)
         _,data,_=self.request("/api/display")
-        self.assertEqual(data["mode"],"Shopping")
+        self.assertEqual(data["mode"],"Groceries")
         self.assertEqual(data["message"],"Dinner ready")
+
+    def test_kiosk_session_can_read_screen_but_cannot_change_settings(self):
+        self.assertEqual(self.request('/api/screen/kitchen')[0], 401)
+        _, _, headers = self.request('/display')
+        cookie = headers['Set-Cookie'].split(';', 1)[0]
+        self.assertEqual(self.request('/api/screen/kitchen', cookie=cookie)[0], 200)
+        self.assertEqual(self.request('/api/settings', cookie=cookie)[0], 401)
+        self.assertEqual(self.request('/api/settings', {'mode':'Agent'}, cookie=cookie)[0], 401)
     def test_calendar_sources_are_persistent_and_validated(self):
         cookie=self.login()
         self.assertEqual(self.request("/api/settings",{"calendars":[0,2]},cookie)[0],200)

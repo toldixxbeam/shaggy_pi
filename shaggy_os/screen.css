@@ -1,0 +1,79 @@
+.kiosk{margin:0;background:#0d1816}
+.shaggy-display{
+  --surface:#172722;--line:#30443b;--ink:#edf7ed;--muted:#a5b9af;--accent:#bce7ae;
+  --source-0:#8bc9f1;--source-1:#bce392;--source-2:#e6b4f0;
+  color:var(--ink);font-family:Inter,system-ui,sans-serif;min-width:0;
+}
+.shaggy-display *{box-sizing:border-box}
+.shaggy-display h1,.shaggy-display h2,.shaggy-display p,.shaggy-display ul{margin:0}
+.kiosk .shaggy-display{height:100dvh;padding:clamp(12px,2vw,30px)}
+.kiosk .shaggy-display[data-screen="Photos"],.kiosk .shaggy-display[data-screen="Browser"]{padding:0}
+.display-kitchen{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:clamp(10px,1.6vw,24px);min-height:0;height:100%}
+.display-panel{border:1px solid var(--line);border-radius:18px;background:var(--surface);min-width:0;min-height:0}
+.display-month,.display-day{display:flex;flex-direction:column;overflow:hidden}
+.display-header{padding:clamp(12px,2vw,28px);display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.display-header h1{font-weight:640;letter-spacing:-.045em;font-size:clamp(22px,3.45vw,56px);line-height:1}
+.display-header h2{font-weight:640;letter-spacing:-.035em;font-size:clamp(20px,2.7vw,42px);line-height:1.1}
+.display-eyebrow,.display-note{color:var(--muted);font-size:clamp(11px,1vw,16px)}
+.display-eyebrow{margin-bottom:7px!important}
+.display-clock{color:var(--accent);font-size:clamp(18px,2.4vw,39px);font-variant-numeric:tabular-nums}
+.display-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:clamp(10px,.9vw,15px);color:var(--muted)}
+.display-legend span{white-space:nowrap}
+.display-dot{width:.55em;height:.55em;display:inline-block;border-radius:50%;background:var(--event-color,var(--muted));margin-right:5px;vertical-align:baseline}
+.display-week,.display-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.display-week{border-block:1px solid var(--line);background:#192f26}
+.display-week span{padding:7px 5px;text-align:center;color:var(--muted);font-size:clamp(9px,1vw,15px);font-weight:640}
+.display-days{flex:1;grid-template-rows:repeat(var(--weeks,5),minmax(0,1fr))}
+.display-cell{overflow:hidden;min-width:0;padding:clamp(3px,.55vw,9px);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.display-cell:nth-child(7n){border-right:0}
+.display-cell:nth-last-child(-n+7){border-bottom:0}
+.display-cell.outside{background:#13231d;color:#acc1b3;opacity:.55}
+.display-cell.current{background:#294332;box-shadow:inset 0 0 0 1px #8aaf7a}
+.display-date{display:block;font-weight:680;font-size:clamp(10px,1.2vw,18px);margin-bottom:4px}
+.display-cell.current .display-date{color:#cef5bc}
+.display-event{background:#233830;border-left:2px solid var(--event-color,var(--muted));border-radius:4px;margin-bottom:3px;padding:2px 4px;font-size:clamp(9px,1vw,15px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.display-more{font-size:clamp(9px,.8vw,13px);color:var(--muted)}
+.display-day .display-header{border-bottom:1px solid var(--line)}
+.display-day-empty{padding:clamp(10px,1.6vw,22px);font-size:clamp(12px,1.2vw,19px);color:var(--muted)}
+.display-agenda{list-style:none;overflow:hidden;padding:0 clamp(12px,1.6vw,24px);min-height:0}
+.display-agenda li{display:grid;grid-template-columns:minmax(58px,26%) minmax(0,1fr);align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding:clamp(5px,1.05vh,14px) 0}
+.display-agenda.dense li{padding:3px 0}
+.display-agenda li:last-child{border-bottom:0}
+.display-agenda-time{font-size:clamp(10px,1.05vw,18px);color:var(--muted);font-variant-numeric:tabular-nums}
+.display-agenda-title{font-size:clamp(12px,1.27vw,22px);font-weight:590;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.display-calendar-status{padding:9px clamp(12px,2vw,28px);border-top:1px solid var(--line);font-size:clamp(10px,.97vw,16px);color:#ffdcaa;margin-top:auto!important}
+.shaggy-display[data-preview] .display-kitchen{min-height:clamp(520px,74vh,850px)}
+.display-groceries{height:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,1.6vw,24px)}
+.display-groceries .display-panel{overflow:hidden;padding-bottom:10px}
+.display-groceries h3{margin:.35em clamp(12px,2vw,28px);font-size:clamp(13px,1.3vw,22px);color:var(--accent)}
+.display-grocery-products{list-style:none;padding:0 clamp(12px,2vw,28px)}
+.display-grocery-products li{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;gap:9px;padding:4px 0;border-bottom:1px solid var(--line);font-size:clamp(11px,1.08vw,18px)}
+.display-grocery-products li:last-child{border-bottom:0}
+.display-grocery-products li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.display-grocery-products li span:first-child,.display-grocery-products li span:last-child{color:var(--muted)}
+.display-grocery-quantity{min-width:2.4em}
+.display-grocery-page{margin:8px clamp(12px,2vw,28px)!important;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:clamp(10px,1vw,15px)}
+.display-grocery-page button{padding:2px 8px}
+.display-screen-center{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);background:#0a120f;font-size:clamp(15px,2vw,26px)}
+.display-photo{background:#090b0a}
+.display-chat{height:100%;display:flex;flex-direction:column;min-height:0}
+.display-chat-body{padding:0 clamp(12px,2vw,30px) clamp(12px,2vw,30px);display:flex;flex-direction:column;gap:12px;overflow:auto;scrollbar-width:none}
+.display-bubble{padding:12px 18px;border-radius:14px;background:#263d32;max-width:88%;align-self:flex-start;overflow-wrap:anywhere}
+.display-bubble.user{background:#314b3e;align-self:flex-end}
+.display-bubble strong{font-size:clamp(11px,1.05vw,16px);color:var(--accent)}
+.display-bubble p{font-size:clamp(14px,1.7vw,28px);white-space:pre-wrap;line-height:1.35;margin-top:3px}
+.display-browser{height:100%;background:#090b0a;display:grid;place-items:center}
+.display-browser img{display:block;width:100%;height:100%;min-height:0;object-fit:contain}
+@media (max-width:800px){
+  .shaggy-display[data-preview] .display-kitchen{display:flex;flex-direction:column}
+  .shaggy-display[data-preview] .display-day{order:-1}
+  .shaggy-display[data-preview] .display-days{min-height:420px}
+  .shaggy-display[data-preview] .display-groceries{grid-template-columns:1fr}
+  .display-event{padding:2px}
+}
+@media (max-height:700px){
+  .kiosk .display-header{padding:10px 14px}
+  .kiosk .display-cell{padding:3px}
+  .kiosk .display-event{font-size:clamp(8px,.85vw,13px);padding-block:0}
+  .kiosk .display-agenda li{padding-block:3px}
+}

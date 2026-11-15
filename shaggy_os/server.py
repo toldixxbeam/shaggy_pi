@@ -8,10 +8,15 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import subprocess
+import tempfile
+import threading
 import time
 import urllib.request
+from urllib.parse import parse_qs, urlsplit
+from zoneinfo import ZoneInfo
 
 ROOT = Path(os.environ.get("SHAGGY_OS_DATA", "/var/lib/shaggypi"))
 ROOT.mkdir(parents=True, exist_ok=True)
@@ -22,17 +27,23 @@ if not TOKEN_FILE.exists():
     TOKEN_FILE.write_text(secrets.token_urlsafe(32))
     TOKEN_FILE.chmod(0o600)
 TOKEN = TOKEN_FILE.read_text().strip()
+KIOSK_SESSION = hmac.new(TOKEN.encode(), b'local HDMI display', hashlib.sha256).hexdigest()
 DEFAULT = {"mode": "Kitchen", "message": "Welcome home.", "show_clock": True,
            "show_calendar": True, "show_weather": True, "show_jumbo": True,
            "show_agent": True, "show_moon": True, "theme": "forest",
            "agent_overlay": False, "calendars": [0, 1, 2]}
-MODES = ("Kitchen", "Calendar", "Shopping", "Photos", "Agent", "Browser")
-LAST_WRITE = [0.0]
+MODES = ("Kitchen", "Groceries", "Photos", "Agent", "Browser")
+LEGACY_MODES = {"Calendar": "Kitchen", "Shopping": "Groceries"}
+ASSETS = {"/screen.js": "text/javascript; charset=utf-8", "/screen.css": "text/css; charset=utf-8"}
+CALENDAR_LOCK = threading.Lock()
+CALENDAR = {"data": None, "next_check": 0, "busy": False}
 
 def get_config():
     try:
         value = json.loads(CONFIG_FILE.read_text())
-        return {**DEFAULT, **{k: v for k,v in value.items() if k in DEFAULT}}
+        config = {**DEFAULT, **{k: v for k,v in value.items() if k in DEFAULT}}
+        config["mode"] = LEGACY_MODES.get(config["mode"], config["mode"])
+        return config
     except (OSError, ValueError, TypeError):
         return dict(DEFAULT)
 
@@ -67,6 +78,40 @@ def agent_runtime():
 
 def agent_state():
     return agent_runtime()["online"]
+
+
+def agent_request(path, timeout=8):
+    token = (ROOT / "access-token").read_text().strip()
+    request = urllib.request.Request("http://127.0.0.1:8787/api/display/" + path,
+                                     headers={"Authorization": "Bearer " + token})
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
+def refresh_calendar():
+    data = None
+    try:
+        with agent_request("kitchen", timeout=125) as response:
+            data = json.load(response)
+    except (OSError, ValueError):
+        pass
+    finally:
+        with CALENDAR_LOCK:
+            CALENDAR.update(data=data, busy=False, next_check=time.monotonic() + (120 if data else 25))
+
+
+def kitchen_data():
+    with CALENDAR_LOCK:
+        data = CALENDAR["data"]
+        today = dt.datetime.now(ZoneInfo("Europe/Amsterdam")).date().isoformat()
+        if (time.monotonic() >= CALENDAR["next_check"] or (data and data['today'] != today)) and not CALENDAR["busy"]:
+            CALENDAR["busy"] = True
+            threading.Thread(target=refresh_calendar, daemon=True).start()
+        if not data or data['today'] != today:
+            status = 'loading' if CALENDAR["busy"] else 'unavailable'
+            return {"status": status, "today": today, "events": [], "sources": []}
+        selected = get_config()['calendars']
+        return {**data, "status": "ready", "events": [event for event in data['events'] if event['source'] in selected],
+                "sources": [source for source in data['sources'] if source['index'] in selected]}
 
 def metrics():
     def read(path):
@@ -104,7 +149,56 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header(k,v)
         if cookie: self.send_header("Set-Cookie",cookie)
         self.end_headers()
-        self.wfile.write(payload)
+        try:
+            self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def kiosk_request(self):
+        host = urlsplit('//' + self.headers.get('Host', '')).hostname
+        return self.client_address[0] == '127.0.0.1' and host == '127.0.0.1'
+
+    def kiosk_session(self):
+        if not self.kiosk_request():
+            return False
+        cookie = SimpleCookie()
+        try:
+            cookie.load(self.headers.get('Cookie',''))
+            return 'shaggy_kiosk' in cookie and hmac.compare_digest(KIOSK_SESSION, cookie['shaggy_kiosk'].value)
+        except Exception:
+            return False
+
+    def screen(self, path):
+        if not (self.kiosk_session() or self.authenticated()):
+            return self.send(401, {"error": "Authentication required"})
+        if path == 'kitchen':
+            return self.send(200, kitchen_data())
+        if path in ('groceries', 'chat', 'browser'):
+            try:
+                with agent_request(path) as response:
+                    return self.send(200, response.read(), response.headers.get('Content-Type', 'application/json'))
+            except OSError:
+                return self.send(502, {"error": "The Shaggy agent service is unavailable."})
+        if path == 'voice' and self.kiosk_session() and get_config()['mode'] == 'Agent':
+            identifier = parse_qs(urlsplit(self.path).query).get('id', [''])[0]
+            try:
+                with agent_request('chat') as response:
+                    messages = json.load(response)['messages']
+                reply = next((m for m in messages if m['role'] == 'assistant' and m['id'] == identifier
+                              and m['status'] in ('done', 'needs_input', 'blocked')), None)
+                if reply and reply['text']:
+                    speech = re.sub(r'\[([^\]]+)\]\(https?://[^)]+\)|https?://\S+', lambda m: m[1] or '', reply['text'])
+                    speech = re.sub(r'[`#*]+', '', speech)[:5000]
+                    with tempfile.TemporaryDirectory() as directory:
+                        file = Path(directory) / 'reply.wav'
+                        subprocess.run(['/usr/bin/espeak-ng', '-w', str(file), '-v', 'en-us', '-s', '174', '--stdin'],
+                                       input=speech.encode(), capture_output=True, timeout=10, check=True)
+                        audio = file.read_bytes()
+                    return self.send(200, audio, 'audio/wav')
+            except (OSError, ValueError, subprocess.SubprocessError):
+                return self.send(503, {"error": "Pi speech output is unavailable."})
+        return self.send(404, {"error": "Display content unavailable"})
+
     def authenticated(self):
         bearer = self.headers.get("Authorization","")
         if bearer.startswith("Bearer ") and hmac.compare_digest(bearer[7:], TOKEN): return True
@@ -117,12 +211,20 @@ class Handler(BaseHTTPRequestHandler):
         route=self.path.split("?",1)[0]
         if route == "/health": return self.send(200, {"ok":True,"product":"Shaggy OS 2.0"})
         if route in ("/", "/display"):
-            return self.send(200, UI_FILE.read_bytes(), "text/html; charset=utf-8")
+            if not self.kiosk_request():
+                return self.send(403, {"error": "HDMI display is local to the Pi"})
+            cookie = f"shaggy_kiosk={KIOSK_SESSION}; HttpOnly; SameSite=Strict; Path=/"
+            return self.send(200, UI_FILE.read_bytes(), "text/html; charset=utf-8", cookie=cookie)
+        if route in ASSETS:
+            return self.send(200, UI_FILE.with_name(route[1:]).read_bytes(), ASSETS[route])
+        if route.startswith('/api/screen/'):
+            return self.screen(route.rsplit('/', 1)[1])
         if route == "/api/display":
             config=get_config()
+            runtime=agent_runtime()
             return self.send(200, {"mode":config["mode"],"message":config["message"],
                 **{k:config[k] for k in DEFAULT if k.startswith("show_") or k in ("theme","agent_overlay")},
-                "calendars":config["calendars"], "agent_online":agent_runtime()["online"], "agent_busy":agent_runtime()["busy"]})
+                "calendars":config["calendars"], "agent_online":runtime["online"], "agent_busy":runtime["busy"]})
         if not self.authenticated(): return self.send(401,{"error":"Authentication required"})
         if route == "/api/settings": return self.send(200,get_config())
         if route == "/api/system": return self.send(200,metrics())

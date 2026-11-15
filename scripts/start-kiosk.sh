@@ -22,6 +22,7 @@ if [ "$attempt" -ge 30 ]; then
   exit 1
 fi
 exec /usr/bin/chromium --ozone-platform=wayland --kiosk --no-first-run \
+  --autoplay-policy=no-user-gesture-required \
   --password-store=basic \
   --disable-session-crashed-bubble --disable-infobars \
   --user-data-dir="$PROFILE" "$URL"

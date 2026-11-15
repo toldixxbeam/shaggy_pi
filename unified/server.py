@@ -40,7 +40,7 @@ class Handler(BaseHTTPRequestHandler):
             with urllib.request.urlopen(req,timeout=3) as response:
                 return response.status==200
         except Exception:return False
-    def proxy(self,port,path=None):
+    def proxy(self,port,path=None,display_auth=False):
         if path is None:path=self.path
         method=self.command
         size=int(self.headers.get("Content-Length","0"))
@@ -50,6 +50,12 @@ class Handler(BaseHTTPRequestHandler):
         headers={}
         for key in ("Content-Type","Cookie","Authorization","X-Shaggy","X-Filename","X-Conversation-ID","Origin"):
             if self.headers.get(key):headers[key]=self.headers[key]
+        if display_auth:
+            try:
+                token=Path("/var/lib/shaggypi/display-token").read_text().strip()
+            except OSError:
+                return self.reply(502,{"error":"Pi display unavailable"})
+            headers["Authorization"]="Bearer "+token
         # The legacy API checks Origin against its own public host, which may
         # differ on the Pi. Browser-side requests are same-origin to this portal.
         if "Origin" in headers:headers.pop("Origin")
@@ -73,6 +79,12 @@ class Handler(BaseHTTPRequestHandler):
         if path=="/":return self.reply(200,UI.read_bytes(),"text/html; charset=utf-8")
         if path=="/agent":return self.proxy(AGENT_PORT,"/")
         if path in ("/app.js","/app.css"):return self.proxy(AGENT_PORT)
+        if path in ("/screen.js","/screen.css"):return self.proxy(DISPLAY_PORT)
+        if path in ("/api/screen/kitchen", "/api/screen/groceries") and self.command == 'GET':
+            if not self.auth():return self.reply(401,{"error":"Sign in to Shaggy"})
+            return self.proxy(DISPLAY_PORT,path,display_auth=True)
+        if path.startswith('/api/screen/'):
+            return self.reply(404,{"error":"HDMI content is local to the Pi"})
         if path=="/api/os/status":
             if not self.auth():return self.reply(401,{"error":"Sign in to Shaggy"})
             self.proxy(DISPLAY_PORT,"/api/display")
