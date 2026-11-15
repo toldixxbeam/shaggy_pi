@@ -167,11 +167,11 @@ function setTab(name){
  if(name==='system')refreshMetrics();
 }
 function applyWall(data){
- document.body.className='display mode-'+data.mode+(data.agent_overlay?' agent-takeover':'');
+ document.body.className='display mode-'+data.mode+((data.agent_overlay||data.agent_busy)?' agent-takeover':'');
  $('#wallMode').textContent='Display mode: '+data.mode;
  $('#wallRightLabel').textContent=data.mode==='Shopping'?'Shopping & notes':data.mode==='Agent'?'Shaggy AI':'Household';
  $('#wallMessage').textContent=data.message;
- $('#wallStatus').textContent=data.agent_online?'● Shaggy AI online':'● Dashboard online';
+ $('#wallStatus').textContent=data.agent_busy?'● Shaggy is working':data.agent_online?'● Shaggy AI online':'● Dashboard online';
  $('#wallStatus').style.color=data.agent_online?'#8eddaf':'#e5bd88';
  const tiles=$('#wallGrid').children;
  tiles[2].style.display=data.show_calendar?'':'none';
