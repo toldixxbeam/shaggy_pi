@@ -49,12 +49,24 @@ def check_session(value):
     except (ValueError, AttributeError):
         return False
 
-def agent_state():
+def agent_runtime():
+    """Use the local AI dashboard's private bearer token; expose status only."""
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8787/health", timeout=1.2) as response:
-            return response.status == 200
+        token=(ROOT / "access-token").read_text().strip()
+        request=urllib.request.Request("http://127.0.0.1:8787/api/status?summary=1",
+                                       headers={"Authorization":"Bearer "+token})
+        with urllib.request.urlopen(request, timeout=1.5) as response:
+            data=json.load(response)
+            return {"online":True, "busy":bool(data.get("agent_busy"))}
     except Exception:
-        return False
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:8787/health", timeout=1.0) as response:
+                return {"online":response.status==200,"busy":False}
+        except Exception:
+            return {"online":False,"busy":False}
+
+def agent_state():
+    return agent_runtime()["online"]
 
 def metrics():
     def read(path):
@@ -110,7 +122,7 @@ class Handler(BaseHTTPRequestHandler):
             config=get_config()
             return self.send(200, {"mode":config["mode"],"message":config["message"],
                 **{k:config[k] for k in DEFAULT if k.startswith("show_") or k in ("theme","agent_overlay")},
-                "agent_online":agent_state()})
+                "agent_online":agent_runtime()["online"], "agent_busy":agent_runtime()["busy"]})
         if not self.authenticated(): return self.send(401,{"error":"Authentication required"})
         if route == "/api/settings": return self.send(200,get_config())
         if route == "/api/system": return self.send(200,metrics())
