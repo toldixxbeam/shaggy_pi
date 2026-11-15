@@ -8,14 +8,12 @@ import hashlib
 import hmac
 import json
 import os
-import re
 import secrets
-import subprocess
-import tempfile
 import threading
 import time
 import urllib.request
-from urllib.parse import parse_qs, urlsplit
+from urllib.error import HTTPError
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 ROOT = Path(os.environ.get("SHAGGY_OS_DATA", "/var/lib/shaggypi"))
@@ -80,17 +78,21 @@ def agent_state():
     return agent_runtime()["online"]
 
 
-def agent_request(path, timeout=8):
+def agent_request(path, timeout=8, body=None):
     token = (ROOT / "access-token").read_text().strip()
-    request = urllib.request.Request("http://127.0.0.1:8787/api/display/" + path,
-                                     headers={"Authorization": "Bearer " + token})
+    headers = {"Authorization": "Bearer " + token}
+    data = None
+    if body is not None:
+        headers.update({'Content-Type': 'application/json', 'X-Shaggy': '1'})
+        data = json.dumps(body).encode()
+    request = urllib.request.Request("http://127.0.0.1:8787" + path, data=data, headers=headers)
     return urllib.request.urlopen(request, timeout=timeout)
 
 
 def refresh_calendar():
     data = None
     try:
-        with agent_request("kitchen", timeout=125) as response:
+        with agent_request("/api/display/kitchen", timeout=125) as response:
             data = json.load(response)
     except (OSError, ValueError):
         pass
@@ -176,28 +178,19 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, kitchen_data())
         if path in ('groceries', 'chat', 'browser'):
             try:
-                with agent_request(path) as response:
+                with agent_request('/api/display/' + path) as response:
                     return self.send(200, response.read(), response.headers.get('Content-Type', 'application/json'))
             except OSError:
                 return self.send(502, {"error": "The Shaggy agent service is unavailable."})
         if path == 'voice' and self.kiosk_session() and get_config()['mode'] == 'Agent':
-            identifier = parse_qs(urlsplit(self.path).query).get('id', [''])[0]
             try:
-                with agent_request('chat') as response:
-                    messages = json.load(response)['messages']
-                reply = next((m for m in messages if m['role'] == 'assistant' and m['id'] == identifier
-                              and m['status'] in ('done', 'needs_input', 'blocked')), None)
-                if reply and reply['text']:
-                    speech = re.sub(r'\[([^\]]+)\]\(https?://[^)]+\)|https?://\S+', lambda m: m[1] or '', reply['text'])
-                    speech = re.sub(r'[`#*]+', '', speech)[:5000]
-                    with tempfile.TemporaryDirectory() as directory:
-                        file = Path(directory) / 'reply.wav'
-                        subprocess.run(['/usr/bin/espeak-ng', '-w', str(file), '-v', 'en-us', '-s', '174', '--stdin'],
-                                       input=speech.encode(), capture_output=True, timeout=10, check=True)
-                        audio = file.read_bytes()
-                    return self.send(200, audio, 'audio/wav')
-            except (OSError, ValueError, subprocess.SubprocessError):
-                return self.send(503, {"error": "Pi speech output is unavailable."})
+                query = urlsplit(self.path).query
+                with agent_request('/api/display/voice?' + query, timeout=50) as response:
+                    return self.send(response.status, response.read(), response.headers.get('Content-Type', 'audio/mpeg'))
+            except HTTPError as error:
+                return self.send(error.code, {"error": "The requested Shaggy audio is unavailable."})
+            except OSError:
+                return self.send(503, {"error": "Shaggy’s Onyx voice is unavailable."})
         return self.send(404, {"error": "Display content unavailable"})
 
     def authenticated(self):
@@ -218,6 +211,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, UI_FILE.read_bytes(), "text/html; charset=utf-8", cookie=cookie)
         if route in ASSETS:
             return self.send(200, UI_FILE.with_name(route[1:]).read_bytes(), ASSETS[route])
+        if route == '/reply-audio.js' and self.kiosk_session():
+            try:
+                with agent_request(route, timeout=3) as response:
+                    return self.send(200, response.read(), 'text/javascript; charset=utf-8')
+            except OSError:
+                return self.send(503, {"error": "Shaggy’s audio player is unavailable."})
         if route.startswith('/api/screen/'):
             return self.screen(route.rsplit('/', 1)[1])
         if route == "/api/display":
@@ -249,6 +248,14 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body,dict): raise ValueError("Object expected")
         except (ValueError, json.JSONDecodeError):
             return self.send(400,{"error":"Invalid JSON"})
+        if self.path == '/api/screen/groceries/refresh':
+            if not self.kiosk_session() or get_config()['mode'] != 'Groceries':
+                return self.send(403, {'error': 'Groceries display is unavailable.'})
+            try:
+                with agent_request('/api/display/groceries/refresh', body={}) as response:
+                    return self.send(response.status, response.read())
+            except OSError:
+                return self.send(503, {'error': 'The groceries update is unavailable.'})
         if self.path=="/api/login":
             if not hmac.compare_digest(str(body.get("token","")),TOKEN):
                 time.sleep(0.6)

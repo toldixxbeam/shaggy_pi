@@ -78,7 +78,7 @@ class Handler(BaseHTTPRequestHandler):
         if path=="/health":return self.reply(200,{"ok":True,"name":"Shaggy unified"})
         if path=="/":return self.reply(200,UI.read_bytes(),"text/html; charset=utf-8")
         if path=="/agent":return self.proxy(AGENT_PORT,"/")
-        if path in ("/app.js","/app.css"):return self.proxy(AGENT_PORT)
+        if path in ("/app.js","/app.css","/reply-audio.js"):return self.proxy(AGENT_PORT)
         if path in ("/screen.js","/screen.css"):return self.proxy(DISPLAY_PORT)
         if path in ("/api/screen/kitchen", "/api/screen/groceries") and self.command == 'GET':
             if not self.auth():return self.reply(401,{"error":"Sign in to Shaggy"})

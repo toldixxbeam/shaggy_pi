@@ -144,7 +144,7 @@
     return list;
   }
 
-  function groceries(data, index, compact, changePage) {
+  function groceries(data, index, compact, changePage, refresh, refreshState) {
     const root = make('div','display-groceries');
     const cart = make('section','display-panel');
     const orders = make('section','display-panel');
@@ -153,7 +153,17 @@
     const cartHeading = heading(cartData?.editing?'Current order edit':'Current cart','Jumbo');
     if (cartData?.total) cartHeading.append(make('div','display-clock',cartData.total));
     cart.append(cartHeading);
-    orders.append(heading('Upcoming orders','Jumbo'));
+    const ordersHeading = heading('Upcoming orders','Jumbo');
+    if (refresh) {
+      const label = refreshState==='waiting'?'Waiting for browser…':refreshState==='running'?'Updating…':'Update';
+      const button = make('button','display-update',label);
+      button.type='button';
+      button.disabled=refreshState==='waiting'||refreshState==='running';
+      button.addEventListener('click',refresh);
+      ordersHeading.append(button);
+    }
+    orders.append(ordersHeading);
+    if (refreshState==='failed') orders.append(make('p','display-day-empty','Could not request an update. Try again.'));
     const perPage = compact ? 15 : 20;
     const pager = (part, count) => {
       if (count<2) return;
@@ -224,9 +234,10 @@
 
   function mount(root, fixedMode = null) {
     const kiosk = fixedMode===null;
-    const audio = kiosk ? new Audio() : null;
     let mode, fingerprint, frameUrl, seenReplies, groceryPage=0, lastPage=0;
+    let audioContext, playback, voiceFailed=false;
     let kitchenPoll=0, configPoll=0, stopped=false;
+    let groceryUpdating=false, groceryError=false, groceryRevision=0;
     let model=null;
     const changeMode = next => {
       if (next===mode) return;
@@ -237,26 +248,63 @@
       kitchenPoll=0;
       configPoll=0;
       groceryPage=0;
+      groceryError=false;
       lastPage=0;
       seenReplies=null;
-      if (audio) {audio.pause();audio.removeAttribute('src');audio.load();}
+      playback?.abort();
+      voiceFailed=false;
       if (frameUrl) {URL.revokeObjectURL(frameUrl);frameUrl=null;}
       root.replaceChildren();
     };
 
     async function playReply(data) {
-      if (!audio) return;
+      if (!kiosk) return;
       const replies = data.messages.filter(m=>m.role==='assistant' && ['done','needs_input','blocked'].includes(m.status) && m.text);
       const keys = replies.map(m=>m.id);
       if (!seenReplies || seenReplies.chat!==data.conversation?.id) {
+        playback?.abort();
         const earlier = replies.filter(m=>Date.now()-m.created*1000>12000).map(m=>m.id);
         seenReplies={chat:data.conversation?.id,keys:new Set(earlier)};
       }
       const reply = replies.findLast(m=>!seenReplies.keys.has(m.id));
       seenReplies.keys = new Set(keys);
       if (!reply) return;
-      audio.src='/api/screen/voice?id='+encodeURIComponent(reply.id);
-      try {await audio.play();} catch { /* The transcript remains visible if the speaker is unavailable. */ }
+      playback?.abort();
+      const current = new AbortController();
+      playback = current;
+      voiceFailed=false;
+      try {
+        if (!window.playShaggyReply || !window.AudioContext) throw Error('Audio player unavailable.');
+        audioContext ||= new AudioContext();
+        await audioContext.resume();
+        await window.playShaggyReply(audioContext,'/api/screen/voice',reply.id,current.signal);
+      } catch {
+        if (!current.signal.aborted && playback===current) {
+          voiceFailed=true;
+          paint(model,true);
+        }
+      }
+    }
+
+    async function refreshGroceries() {
+      if (groceryUpdating) return;
+      groceryUpdating=true;
+      groceryError=false;
+      groceryRevision++;
+      paint(model,true);
+      try {
+        const path=kiosk?'/api/screen/groceries/refresh':'/api/display/groceries/refresh';
+        const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Shaggy':'1','X-Shaggy-OS':'1'},
+          body:'{}',signal:AbortSignal.timeout(8500)});
+        if (!response.ok) throw Error('Groceries update unavailable.');
+        const data=await response.json();
+        if (mode==='Groceries') model=data;
+      } catch {
+        groceryError=true;
+      } finally {
+        groceryUpdating=false;
+        if (!stopped && mode==='Groceries') paint(model,true);
+      }
     }
 
     function paint(data, force = false) {
@@ -268,11 +316,13 @@
       if (mode==='Groceries') root.replaceChildren(groceries(data,groceryPage,compact,kiosk?null:(offset,count)=>{
         groceryPage=(groceryPage+offset+count)%count;
         paint(model,true);
-      }));
+      },refreshGroceries,groceryUpdating?'running':groceryError?'failed':data?.update));
       if (mode==='Agent') {
         root.replaceChildren(chat(data));
         const body=root.querySelector('.display-chat-body');
         body.scrollTop=body.scrollHeight;
+        const header=root.querySelector('.display-header');
+        header.append(make('p','display-note',voiceFailed?'Onyx playback unavailable.':'Onyx · AI voice'));
         if (data) void playReply(data);
       }
       if (mode==='Photos') root.replaceChildren(make('div','display-screen-center display-photo','Photo source not selected.'));
@@ -297,8 +347,12 @@
             if (lastPage) groceryPage++;
             lastPage=Date.now();
           }
-          model=await (await get('/api/screen/groceries')).json();
-          if (!stopped) paint(model);
+          const revision=groceryRevision;
+          const data=await (await get('/api/screen/groceries')).json();
+          if (!stopped && revision===groceryRevision && !groceryUpdating) {
+            model=data;
+            paint(model);
+          }
         } else if (mode==='Agent') {
           model=await (await get('/api/screen/chat')).json();
           if (!stopped) paint(model);
@@ -338,7 +392,8 @@
     void update();
     return () => {
       stopped=true;
-      if (audio) {audio.pause();audio.removeAttribute('src');audio.load();}
+      playback?.abort();
+      if (audioContext) void audioContext.close().catch(()=>{});
       if (frameUrl) URL.revokeObjectURL(frameUrl);
     };
   }

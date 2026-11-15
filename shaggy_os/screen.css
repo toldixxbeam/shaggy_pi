@@ -1,4 +1,6 @@
-.kiosk{margin:0;background:#0d1816}
+.kiosk{margin:0;background:#0d1816;overflow:hidden}
+.kiosk,.kiosk *{cursor:none!important;scrollbar-width:none}
+.kiosk *::-webkit-scrollbar{display:none}
 .shaggy-display{
   --surface:#172722;--line:#30443b;--ink:#edf7ed;--muted:#a5b9af;--accent:#bce7ae;
   --source-0:#8bc9f1;--source-1:#bce392;--source-2:#e6b4f0;
@@ -46,6 +48,8 @@
 .display-groceries{height:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,1.6vw,24px)}
 .display-groceries .display-panel{overflow:hidden;padding-bottom:10px}
 .display-groceries h3{margin:.35em clamp(12px,2vw,28px);font-size:clamp(13px,1.3vw,22px);color:var(--accent)}
+.display-update{font:inherit;font-size:clamp(12px,1vw,16px);padding:8px 13px;border:1px solid var(--line);border-radius:8px;background:#254637;color:var(--ink)}
+.display-update:disabled{opacity:.65}
 .display-grocery-products{list-style:none;padding:0 clamp(12px,2vw,28px)}
 .display-grocery-products li{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;gap:9px;padding:4px 0;border-bottom:1px solid var(--line);font-size:clamp(11px,1.08vw,18px)}
 .display-grocery-products li:last-child{border-bottom:0}

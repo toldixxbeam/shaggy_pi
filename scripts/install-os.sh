@@ -14,10 +14,6 @@ install -d -m 0755 /opt/shaggy-os
 install -m 0644 "$BASE/shaggy_os/server.py" /opt/shaggy-os/server.py
 install -m 0644 "$BASE/shaggy_os/index.html" /opt/shaggy-os/index.html
 install -m 0644 "$BASE/shaggy_os/screen.js" "$BASE/shaggy_os/screen.css" /opt/shaggy-os/
-if ! command -v espeak-ng >/dev/null 2>&1; then
-  apt-get update
-  apt-get install -y espeak-ng
-fi
 install -m 0755 "$BASE/scripts/start-kiosk.sh" /opt/shaggy-os/start-kiosk.sh
 cat > /etc/systemd/system/shaggy-os.service <<'UNIT'
 [Unit]

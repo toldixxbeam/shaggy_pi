@@ -93,8 +93,10 @@ upcoming order contents. Sign in to Jumbo in Shaggy's browser if prompted. When
 a cart is an edit to a scheduled order, it is identified as such. Jumbo checks
 read the cart and order details and yield the browser to an interactive task.
 
-Agent mirrors the current conversation on HDMI and reads new replies from the
-Pi's configured audio output. Browser mirrors the browser while Shaggy operates
+Agent mirrors the current conversation on HDMI and reads new replies in Shaggy's
+AI-generated Onyx voice through the Pi's configured audio output. Website voice
+mode uses the same speech service and the agent's configured OpenAI key.
+Browser mirrors the browser while Shaggy operates
 it. Photos has a dedicated full-screen mode awaiting a photo source.
 
 Install this release from the existing Pi SSH session:
