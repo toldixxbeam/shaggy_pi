@@ -1,0 +1,21 @@
+name: Shaggy OS tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Shaggy OS service
+        run: python -m py_compile shaggy_os/server.py tests/test_os.py
+      - name: HTTP/authentication smoke tests
+        run: python -m unittest discover -s tests -p 'test_os.py' -v
+      - name: Shell syntax checks
+        run: bash -n scripts/bootstrap.sh scripts/install-pi.sh scripts/install-os.sh
