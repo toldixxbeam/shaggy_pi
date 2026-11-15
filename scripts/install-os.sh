@@ -13,6 +13,7 @@ install -d -o shaggypi -g shaggypi -m 0700 /var/lib/shaggypi
 install -d -m 0755 /opt/shaggy-os
 install -m 0644 "$BASE/shaggy_os/server.py" /opt/shaggy-os/server.py
 install -m 0644 "$BASE/shaggy_os/index.html" /opt/shaggy-os/index.html
+install -m 0755 "$BASE/scripts/start-kiosk.sh" /opt/shaggy-os/start-kiosk.sh
 cat > /etc/systemd/system/shaggy-os.service <<'UNIT'
 [Unit]
 Description=Shaggy OS 2.0 kitchen display and phone control
@@ -51,21 +52,30 @@ echo
 DESKTOP_USER="${SUDO_USER:-}"
 if [[ -n "$DESKTOP_USER" && "$DESKTOP_USER" != root ]] && id "$DESKTOP_USER" >/dev/null 2>&1; then
   HOME_DIR="$(getent passwd "$DESKTOP_USER" | cut -d: -f6)"
-  AUTOSTART="$HOME_DIR/.config/autostart"
+  # Pi OS Trixie uses labwc, which launches ~/.config/labwc/autostart.
+  # The earlier XDG-only desktop entry did not start on this system.
+  AUTOSTART="$HOME_DIR/.config/labwc"
   install -d -o "$DESKTOP_USER" -g "$(id -gn "$DESKTOP_USER")" -m 0755 "$AUTOSTART"
-  KIOSK="$AUTOSTART/shaggy-os.desktop"
-  if [[ -f "$KIOSK" ]]; then cp -a "$KIOSK" "$KIOSK.backup.$(date +%Y%m%d%H%M%S)"; fi
-  cat > "$KIOSK" <<'DESKTOP'
-[Desktop Entry]
-Type=Application
-Name=Shaggy OS Kitchen Display
-Comment=Launch Shaggy OS HDMI dashboard
-Exec=sh -c 'sleep 8; chromium --kiosk --no-first-run --disable-session-crashed-bubble --user-data-dir="$HOME/.config/shaggy-os-kiosk" http://127.0.0.1:8790/display'
-Terminal=false
-X-GNOME-Autostart-enabled=true
-DESKTOP
+  KIOSK="$AUTOSTART/autostart"
+  if [[ -f "$KIOSK" ]]; then
+    cp -a "$KIOSK" "$KIOSK.backup.$(date +%Y%m%d%H%M%S)"
+  else
+    printf '#!/bin/sh\\n' > "$KIOSK"
+  fi
+  # Idempotent: preserve other desktop autostart commands, append ours just once.
+  if ! grep -Fq '/opt/shaggy-os/start-kiosk.sh' "$KIOSK"; then
+    printf '\\n# Shaggy OS hybrid kitchen kiosk\\n/opt/shaggy-os/start-kiosk.sh &\\n' >> "$KIOSK"
+  fi
   chown "$DESKTOP_USER:$(id -gn "$DESKTOP_USER")" "$KIOSK"
-  echo "HDMI kiosk autostart configured for $DESKTOP_USER. Start the graphical desktop session or reboot to see it."
+  chmod 0755 "$KIOSK"
+  # Remove only the prior Shaggy XDG entry so the kiosk doesn't launch twice.
+  OLD_DESKTOP="$HOME_DIR/.config/autostart/shaggy-os.desktop"
+  if [[ -f "$OLD_DESKTOP" ]] && grep -q '^Name=Shaggy OS Kitchen Display$' "$OLD_DESKTOP"; then
+    mv "$OLD_DESKTOP" "$OLD_DESKTOP.disabled"
+    chown "$DESKTOP_USER:$(id -gn "$DESKTOP_USER")" "$OLD_DESKTOP.disabled"
+  fi
+  echo "labwc HDMI autostart configured for $DESKTOP_USER. Reboot to launch the kitchen screen."
+
 else
   echo 'No desktop user detected; kiosk autostart not configured. Run with sudo as your login user.'
 fi
