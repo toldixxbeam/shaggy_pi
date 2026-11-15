@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shaggy — Household OS</title><meta name="theme-color" content="#101d1c">
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:#0d1719;color:#e9f5ef;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}
+button{cursor:pointer;color:#e9f5ef;border:1px solid #38504b;border-radius:10px;background:#213631;padding:11px 15px}button:hover{background:#315148}button.primary{background:#a0e4b4;color:#12281d;font-weight:700}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #9ce2b5;outline-offset:2px}
+input,textarea{width:100%;border:1px solid #344a46;border-radius:10px;background:#10201f;color:#edf8f1;padding:12px}h1,h2,p{margin:0}h1{font-size:clamp(24px,2.8vw,36px);letter-spacing:-.04em}h2{font-size:18px}.muted{color:#9db6ac;font-size:13px}.good{color:#a0e4b4}.warn{color:#ffcb94}
+#signIn{max-width:420px;margin:12vh auto;background:#142724;padding:32px;border:1px solid #345145;border-radius:22px;display:grid;gap:15px}
+.logo{display:flex;gap:12px;align-items:center;font-size:19px;font-weight:850;letter-spacing:.05em}.logo b{width:42px;height:42px;border-radius:14px;background:#294e3c;display:grid;place-items:center;color:#a3efbc;font-size:26px}.logo small{display:block;font-size:10px;color:#8fb1a0;letter-spacing:.18em}
+#shell{display:grid;grid-template-columns:225px minmax(0,1fr);min-height:100vh}
+aside{border-right:1px solid #29433e;background:#10201f;padding:28px 18px;display:flex;flex-direction:column;gap:32px}
+nav{display:grid;gap:9px}nav button{text-align:left;background:none;border:none;padding:13px 15px;color:#a6b9b2;font-size:14px}nav button.active{background:#294739;color:#d4ffe0}
+.sidefoot{margin-top:auto;color:#809f93;font-size:12px;line-height:1.7}
+main{min-width:0;padding:30px clamp(15px,3vw,50px)}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:25px;flex-wrap:wrap}
+.chip{font-size:12px;border:1px solid #3b6551;border-radius:20px;padding:8px 13px;color:#a1dfb6}
+.tab{display:none}.tab.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.card{background:#172926;border:1px solid #314941;border-radius:17px;padding:23px;min-width:0}
+.clock-card{grid-column:span 7;background:linear-gradient(130deg,#203e33,#142526 70%);min-height:230px;display:flex;flex-direction:column;justify-content:space-between}
+.clock{font-size:clamp(64px,8vw,110px);font-weight:250;letter-spacing:-.07em;line-height:1}
+.eyebrow{font-size:11px;letter-spacing:.16em;color:#9ebca9;text-transform:uppercase;margin-bottom:14px}
+.weather{grid-column:span 5;display:flex;flex-direction:column;justify-content:space-between}
+.weather .sun{font-size:65px;color:#c8d99c}
+.calendar{grid-column:span 7;min-height:165px}.jumbo{grid-column:span 5}.agent{grid-column:span 12;display:flex;align-items:center;gap:18px;background:#1d3b30}
+.orb{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 30% 28%,#d7f3cf,#76c598 43%,#1d5f51 80%);box-shadow:0 0 25px #61c89855;flex-shrink:0}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:20px 0}
+.controls button{min-height:85px;text-align:left}.controls button.active{border-color:#9de4b4;color:#a7efba}.controls small{display:block;color:#8aa69a;margin-top:8px;font-size:11px}
+.stack{display:grid;gap:18px}.line{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #314941;padding:12px 0;gap:12px}.line input{width:22px;height:22px;accent-color:#9ce0b1}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+#agentFrame{border:0;width:100%;height:calc(100vh - 130px);min-height:620px;background:#10191b;border-radius:14px}
+.note{font-size:12px;color:#99b1a6;line-height:1.7;margin-top:18px}a{color:#a5edb9}
+@media(max-width:850px){#shell{grid-template-columns:1fr}aside{padding:13px;gap:10px;border-right:0;border-bottom:1px solid #29433e}.sidefoot{display:none}nav{display:flex;overflow:auto;gap:5px}nav button{white-space:nowrap;padding:10px}main{padding:17px}.clock-card,.calendar,.weather,.jumbo{grid-column:span 12}.clock-card{min-height:220px}#agentFrame{height:calc(100dvh - 145px);min-height:450px}}
+</style></head><body>
+<section id="signIn" hidden><div class="logo"><b>✳</b><span>SHAGGY<small>HOUSEHOLD OS 2.0</small></span></div><h1>Welcome home.</h1><p class="muted">One secure Shaggy login for the AI workstation and your kitchen display.</p><form id="loginForm" class="stack"><input id="loginToken" type="password" autocomplete="current-password" placeholder="Shaggy AI access token" required><button class="primary">Sign in to Shaggy</button></form><p id="loginError" class="warn"></p></section>
+<div id="shell" hidden><aside><div class="logo"><b>✳</b><span>SHAGGY<small>HOUSEHOLD OS</small></span></div><nav id="navigation">
+<button data-tab="home" class="active">⌂ &nbsp; Home</button>
+<button data-tab="studio">▣ &nbsp; Display Studio</button>
+<button data-tab="agent">✧ &nbsp; AI & browser</button>
+<button data-tab="system">⚙ &nbsp; System & accounts</button>
+</nav><div class="sidefoot">One dashboard.<br>One Shaggy AI identity.<br>Private browser and kitchen screen.</div></aside>
+<main><div class="heading"><div><h1 id="title">Good to have you home.</h1><p id="subtitle" class="muted" style="margin-top:5px">Your household at a glance.</p></div><span class="chip" id="status">● Checking services</span></div>
+<section id="home" class="tab active">
+<div class="grid">
+<article class="card clock-card"><div class="eyebrow">Today · Zeeland</div><div><div class="clock" id="clock">--:--</div><div id="today" style="color:#bdcec4;font-size:17px"></div></div><p class="muted">Europe/Amsterdam · Kitchen dashboard</p></article>
+<article class="card weather"><div><div class="eyebrow">Weather & daylight</div><div class="sun">☀</div></div><div><h2>Local forecast</h2><p class="muted">Live weather integration pending</p></div></article>
+<article class="card calendar"><div class="eyebrow">Family calendar</div><h2>Keep the whole household on schedule.</h2><p class="muted" style="margin-top:12px">Calendar data awaits account integration.</p></article>
+<article class="card jumbo"><div class="eyebrow">Jumbo shopping</div><h2>Plan groceries with Shaggy.</h2><p class="muted" style="margin-top:12px">The AI browser can prepare shopping carts for review.</p></article>
+<article class="card agent"><div class="orb"></div><div style="flex:1"><h2>Shaggy AI</h2><p class="muted" id="agentStatus" style="margin-top:5px">Checking browser agent...</p></div><button id="openAgent">Open workstation</button></article>
+</div></section>
+<section id="studio" class="tab"><article class="card stack">
+<div><h2>Display Studio</h2><p class="muted" style="margin-top:7px">Control the Pi's physical HDMI screen. Changes apply without restarting the AI agent.</p></div>
+<div class="controls" id="modes"></div>
+<div><label for="message">Household announcement</label><textarea id="message" rows="3" maxlength="240" style="margin-top:8px"></textarea></div>
+<div><button class="primary" id="saveMessage">Update display message</button></div>
+<h2>Widgets</h2><div id="widgets"></div>
+<div class="actions"><button id="takeover">Show Shaggy</button><button id="returnHome">Return to dashboard</button></div><p id="saveResult" class="good"></p>
+</article></section>
+<section id="agent" class="tab"><iframe id="agentFrame" src="about:blank" title="Shaggy AI and private browser"></iframe></section>
+<section id="system" class="tab"><article class="card"><h2>Services & device status</h2><div id="metrics" style="margin-top:18px"></div><p class="note">For Google or OpenAI connections, open AI & browser → Settings. Credentials remain private to the agent service.</p></article></section>
+<p class="note">SHAGGY OS 2.0 · Unified portal on the Pi. The existing cloud website must be routed to this portal before it becomes the public dashboard.</p>
+</main></div>
+<script>
+const $=s=>document.querySelector(s);let settings={};const modes=['Kitchen','Calendar','Shopping','Photos','Agent','Browser'];
+const keys={show_clock:'Clock',show_calendar:'Family calendar',show_weather:'Weather',show_jumbo:'Jumbo shopping',show_agent:'AI activity',show_moon:'Moon phase'};
+const clock=()=>{const n=new Date();$('#clock').textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Amsterdam',hour:'2-digit',minute:'2-digit'}).format(n);$('#today').textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Amsterdam',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(n)};clock();setInterval(clock,20000);
+async function api(url,body){let opts={credentials:'same-origin',cache:'no-store'};if(body!==undefined){opts.method='POST';opts.headers={'Content-Type':'application/json','X-Shaggy-OS':'1','X-Shaggy':'1'};opts.body=JSON.stringify(body)}let r=await fetch(url,opts);let data=await r.json().catch(()=>({}));if(!r.ok)throw Error(data.error||'Request failed');return data}
+function tab(name){
+ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id===name));
+ document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+ $('#title').textContent={home:'Good to have you home.',studio:'Display Studio',agent:'Shaggy AI & browser',system:'System & accounts'}[name];
+ $('#subtitle').textContent={home:'Your household at a glance.',studio:'What shows up on the kitchen screen.',agent:'Chat, control websites, and manage accounts.',system:'Your Pi and connected services.'}[name];
+ if(name==='agent' && $('#agentFrame').src.endsWith('about:blank'))$('#agentFrame').src='/agent';
+ if(name==='system')refreshMetrics();
+}
+async function init(){
+ try{await api('/api/status?summary=1');$('#signIn').hidden=true;$('#shell').hidden=false;refreshAll()}
+ catch(e){$('#signIn').hidden=false;$('#shell').hidden=true}
+}
+function render(){
+ $('#modes').replaceChildren(...modes.map(m=>{let b=document.createElement('button');b.className=m===settings.mode?'active':'';b.textContent=m;let small=document.createElement('small');small.textContent=m===settings.mode?'Currently displayed':'Set HDMI mode';b.append(small);b.onclick=()=>save({mode:m});return b}));
+ $('#widgets').replaceChildren(...Object.entries(keys).map(([key,label])=>{let row=document.createElement('label');row.className='line';let text=document.createElement('span');text.textContent=label;let check=document.createElement('input');check.type='checkbox';check.checked=Boolean(settings[key]);check.onchange=()=>save({[key]:check.checked});row.append(text,check);return row}));
+ $('#message').value=settings.message||'';
+}
+async function save(changes){
+ try{let res=await api('/api/os/settings',changes);settings=res.settings;render();$('#saveResult').textContent='✓ Saved to kitchen screen'}
+ catch(e){$('#saveResult').textContent='Could not save: '+e.message}
+}
+async function refreshMetrics(){
+ try{
+  let [agent,system]=await Promise.all([api('/api/status?summary=1'),api('/api/os/system')]);
+  $('#status').textContent=agent.configured?'● AI configured':'● AI setup required';
+  $('#agentStatus').textContent=agent.agent_busy?'Shaggy is working in his browser':agent.configured?'Agent online and ready':'Add an API key in AI Settings';
+  let details={'AI service':'Online', 'AI model':agent.model||'—','CPU temperature':system.temperature_c==null?'Not available':system.temperature_c+' °C','RAM used':system.ram_used_pct+'%','Disk used':system.disk_used_pct+'%','Uptime':system.uptime_hours+' hours','CPU load':system.load_1m};
+  $('#metrics').replaceChildren(...Object.entries(details).map(([k,v])=>{let row=document.createElement('div');row.className='line';let name=document.createElement('span');name.className='muted';name.textContent=k;let val=document.createElement('strong');val.textContent=v;row.append(name,val);return row}));
+ }catch(e){$('#status').textContent='● Check connection';$('#metrics').textContent='Service error: '+e.message}
+}
+async function refreshAll(){try{settings=(await api('/api/os/settings'));render()}catch(e){$('#saveResult').textContent='Display unavailable: '+e.message}refreshMetrics()}
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/login',{token:$('#loginToken').value});$('#loginToken').value='';$('#loginError').textContent='';init()}catch(e){$('#loginError').textContent='Invalid access token'}});
+$('#navigation').addEventListener('click',e=>{let t=e.target.closest('[data-tab]');if(t)tab(t.dataset.tab)});
+$('#openAgent').onclick=()=>tab('agent');
+$('#saveMessage').onclick=()=>save({message:$('#message').value});
+$('#takeover').onclick=()=>save({agent_overlay:true});
+$('#returnHome').onclick=()=>save({agent_overlay:false});
+init();setInterval(()=>{if(!$('#shell').hidden)refreshMetrics()},15000);
+</script></body></html>
