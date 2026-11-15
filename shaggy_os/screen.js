@@ -114,17 +114,20 @@
       row.append(make('time','display-agenda-time',eventTime(event,today)),title);
       agenda.append(row);
     }
-    if (todaysEvents.length) datePanel.append(agenda);
-    else if (sources.some(s => ['ready','busy_only'].includes(s.status))) datePanel.append(make('p','display-day-empty','No events today.'));
-    if (todaysEvents.length>limit) datePanel.append(make('p','display-day-empty','+'+(todaysEvents.length-limit)+' more today'));
-
     const unavailable = sources.filter(s=>s.status==='unavailable').map(s=>s.label);
-    const busyOnly = sources.filter(s=>s.status==='busy_only').map(s=>s.label);
-    let status = !data || data.status==='loading'?'Loading calendars…':data.status==='unavailable'?'Calendar data unavailable.':'';
-    if (sources.some(s=>s.status==='connect')) status = 'Connect Google Calendar in AI settings.';
-    if (unavailable.length) status = 'Check Google Calendar sharing for '+unavailable.join(', ')+'.';
-    if (busyOnly.length) status = [status,'Free/busy only for '+busyOnly.join(', ')+'.'].filter(Boolean).join(' ');
-    if (status) datePanel.append(make('p','display-calendar-status',status));
+    const stale = sources.filter(s=>s.status==='stale').map(s=>s.label);
+    const notices = [];
+    if (!data || data.status==='loading') notices.push('Loading calendars…');
+    if (data?.status==='unavailable') notices.push('Calendar data unavailable.');
+    if (unavailable.length) notices.push('Could not load '+unavailable.join(', ')+'.');
+    if (stale.length) notices.push('Showing the last refresh for '+stale.join(', ')+'.');
+    if (notices.length) datePanel.append(make('p','display-calendar-status',notices.join(' ')));
+    if (todaysEvents.length) datePanel.append(agenda);
+    else if (sources.some(s=>['ready','stale'].includes(s.status))) {
+      const empty = unavailable.length?'No events today in the calendars shown.':'No events today.';
+      datePanel.append(make('p','display-day-empty',empty));
+    }
+    if (todaysEvents.length>limit) datePanel.append(make('p','display-day-empty','+'+(todaysEvents.length-limit)+' more today'));
     root.append(calendar,datePanel);
     return root;
   }

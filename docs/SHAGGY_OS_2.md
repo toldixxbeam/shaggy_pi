@@ -83,11 +83,10 @@ After reconnecting, verify `pgrep -af 'shaggy-os-kiosk|start-kiosk'` and the pre
 
 Kitchen shows the month on the left and today's agenda on the right. The website
 and HDMI display use the same calendar renderer and the same three sources:
-Julia, Imported and Family. To fetch event data, enable the Google Calendar API
-in the existing OAuth project and connect or reconnect the Google account in
-**AI & browser → Settings → Google APIs**. Use an account with permission to read
-all three calendars. No calendar needs to be made public. Display Studio lets
-you choose which of the available calendars appear.
+Julia, Imported and Family. Shaggy downloads the public iCalendar feeds
+associated with the three original display links and expands recurring events.
+The calendars refresh automatically without an API key or Google sign-in.
+Display Studio lets you choose which calendars appear.
 
 Groceries reads the saved Jumbo browser session and shows the current cart and
 upcoming order contents. Sign in to Jumbo in Shaggy's browser if prompted. When

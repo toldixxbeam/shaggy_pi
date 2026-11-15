@@ -96,7 +96,8 @@ def refresh_calendar():
         pass
     finally:
         with CALENDAR_LOCK:
-            CALENDAR.update(data=data, busy=False, next_check=time.monotonic() + (120 if data else 25))
+            healthy = data and all(source['status'] == 'ready' for source in data['sources'])
+            CALENDAR.update(data=data, busy=False, next_check=time.monotonic() + (120 if healthy else 25))
 
 
 def kitchen_data():
