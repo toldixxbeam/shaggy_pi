@@ -4,7 +4,7 @@ set -Eeuo pipefail
 if [[ ${EUID} -ne 0 ]]; then echo 'Use sudo bash scripts/install-pi.sh' >&2; exit 1; fi
 . /etc/os-release
 if [[ "${ID}" != "debian" && "${ID}" != "raspbian" ]]; then echo 'Raspberry Pi OS (Debian) required; refusing unsupported OS.' >&2; exit 1; fi
-if [[ "$(uname -m)" != "aarch64" ]]; then echo '64-bit ARM Raspberry Pi OS is required. No changes made.' >&2; exit 1; fi
+if [[ "$(uname -m)" != "aarch64" || "$(getconf LONG_BIT)" != "64" ]]; then echo '64-bit Raspberry Pi OS userland is required. No changes made.' >&2; exit 1; fi
 if [[ ! -d app && ! -d vendor/shaggy/app ]]; then
   echo 'Missing agent source. Run from checkout with vendor/shaggy or app.' >&2; exit 1
 fi
@@ -13,6 +13,7 @@ AGENT_SOURCE="$SOURCE_DIR/vendor/shaggy"
 [[ -d "$SOURCE_DIR/app" ]] && AGENT_SOURCE="$SOURCE_DIR"
 [[ -f "$AGENT_SOURCE/app/server.py" ]] || { echo 'Agent source incomplete.' >&2; exit 1; }
 [[ -f "$AGENT_SOURCE/requirements.txt" ]] || { echo 'Agent requirements missing.' >&2; exit 1; }
+[[ -f "$AGENT_SOURCE/SHAGGY.md" ]] || { echo 'Agent policy missing.' >&2; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y python3 python3-venv python3-pip git curl xvfb xauth chromium libnss3 libatk-bridge2.0-0 libgbm1 libasound2t64 2>/dev/null || apt-get install -y python3 python3-venv python3-pip git curl xvfb xauth chromium libnss3 libatk-bridge2.0-0 libgbm1 libasound2
@@ -21,6 +22,7 @@ install -d -o shaggypi -g shaggypi -m 0700 /var/lib/shaggypi
 install -d -m 0755 /opt/shaggy-pi/app
 cp -a "$AGENT_SOURCE/app/." /opt/shaggy-pi/app/
 cp "$AGENT_SOURCE/requirements.txt" /opt/shaggy-pi/requirements.txt
+cp "$AGENT_SOURCE/SHAGGY.md" /opt/shaggy-pi/SHAGGY.md
 python3 -m venv /opt/shaggy-pi/.venv
 /opt/shaggy-pi/.venv/bin/pip install --disable-pip-version-check -r /opt/shaggy-pi/requirements.txt
 # Playwright's bundled Linux browser is not guaranteed on ARM64; use distro Chromium.
@@ -65,7 +67,8 @@ PY
 chown -R root:root /opt/shaggy-pi
 chmod 0755 /opt/shaggy-pi
 systemctl daemon-reload
-systemctl enable --now shaggy-pi.service
+systemctl enable shaggy-pi.service
+systemctl restart shaggy-pi.service
 for n in {1..30}; do
   if curl -fsS --max-time 2 http://127.0.0.1:8787/health >/dev/null; then
     echo 'Shaggy Pi healthy on localhost:8787. Existing kiosk and SSH untouched.'
