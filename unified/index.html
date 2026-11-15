@@ -31,6 +31,13 @@ main{min-width:0;padding:30px clamp(15px,3vw,50px)}
 #agentFrame{border:0;width:100%;height:calc(100vh - 130px);min-height:620px;background:#10191b;border-radius:14px}
 .note{font-size:12px;color:#99b1a6;line-height:1.7;margin-top:18px}a{color:#a5edb9}
 @media(max-width:850px){#shell{grid-template-columns:1fr}aside{padding:13px;gap:10px;border-right:0;border-bottom:1px solid #29433e}.sidefoot{display:none}nav{display:flex;overflow:auto;gap:5px}nav button{white-space:nowrap;padding:10px}main{padding:17px}.clock-card,.calendar,.weather,.jumbo{grid-column:span 12}.clock-card{min-height:220px}#agentFrame{height:calc(100dvh - 145px);min-height:450px}}
+
+.calendar-embed{width:100%;border:0;border-radius:12px;background:#f7f9f8;display:block;height:325px;margin-top:12px}
+.calendar-filters{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.calendar-filters label{display:flex;align-items:center;gap:7px;background:#243b34;border-radius:10px;padding:10px 13px;font-size:13px;color:#dfefe4}
+.calendar-filters input{width:18px;height:18px;accent-color:#9de4b4}
+.calendar-day,.calendar-month{grid-column:span 7}
+@media(max-width:850px){.calendar-day,.calendar-month{grid-column:span 12}.calendar-embed{height:380px}}
 </style></head><body>
 <section id="signIn" hidden><div class="logo"><b>✳</b><span>SHAGGY<small>HOUSEHOLD OS 2.0</small></span></div><h1>Welcome home.</h1><p class="muted">One secure Shaggy login for the AI workstation and your kitchen display.</p><form id="loginForm" class="stack"><input id="loginToken" type="password" autocomplete="current-password" placeholder="Shaggy AI access token" required><button class="primary">Sign in to Shaggy</button></form><p id="loginError" class="warn"></p></section>
 <div id="shell" hidden><aside><div class="logo"><b>✳</b><span>SHAGGY<small>HOUSEHOLD OS</small></span></div><nav id="navigation">
@@ -42,9 +49,10 @@ main{min-width:0;padding:30px clamp(15px,3vw,50px)}
 <main><div class="heading"><div><h1 id="title">Good to have you home.</h1><p id="subtitle" class="muted" style="margin-top:5px">Your household at a glance.</p></div><span class="chip" id="status">● Checking services</span></div>
 <section id="home" class="tab active">
 <div class="grid">
-<article class="card clock-card"><div class="eyebrow">Today · Zeeland</div><div><div class="clock" id="clock">--:--</div><div id="today" style="color:#bdcec4;font-size:17px"></div></div><p class="muted">Europe/Amsterdam · Kitchen dashboard</p></article>
-<article class="card weather"><div><div class="eyebrow">Weather & daylight</div><div class="sun">☀</div></div><div><h2>Local forecast</h2><p class="muted">Live weather integration pending</p></div></article>
-<article class="card calendar"><div class="eyebrow">Family calendar</div><h2>Keep the whole household on schedule.</h2><p class="muted" style="margin-top:12px">Calendar data awaits account integration.</p></article>
+<article class="card calendar-day"><div class="eyebrow">Today's events · Selected calendars</div><iframe id="dayAgenda" class="calendar-embed" title="Today's events on selected Google calendars" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></article>
+<article class="card clock-card" style="grid-column:span 5"><div class="eyebrow">Today · Zeeland</div><div><div class="clock" id="clock">--:--</div><div id="today" style="color:#bdcec4;font-size:17px"></div></div><p class="muted">Europe/Amsterdam</p></article>
+<article class="card calendar-month"><div class="eyebrow">This month · Selected calendars</div><iframe id="monthCalendar" class="calendar-embed" style="height:480px" title="Combined month view from selected Google calendars" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></article>
+<article class="card weather" style="grid-column:span 5"><div><div class="eyebrow">Weather & daylight</div><div class="sun">☀</div></div><div><h2>Local forecast</h2><p class="muted">Live weather integration pending</p></div></article>
 <article class="card jumbo"><div class="eyebrow">Jumbo shopping</div><h2>Plan groceries with Shaggy.</h2><p class="muted" style="margin-top:12px">The AI browser can prepare shopping carts for review.</p></article>
 <article class="card agent"><div class="orb"></div><div style="flex:1"><h2>Shaggy AI</h2><p class="muted" id="agentStatus" style="margin-top:5px">Checking browser agent...</p></div><button id="openAgent">Open workstation</button></article>
 </div></section>
@@ -53,7 +61,7 @@ main{min-width:0;padding:30px clamp(15px,3vw,50px)}
 <div class="controls" id="modes"></div>
 <div><label for="message">Household announcement</label><textarea id="message" rows="3" maxlength="240" style="margin-top:8px"></textarea></div>
 <div><button class="primary" id="saveMessage">Update display message</button></div>
-<h2>Widgets</h2><div id="widgets"></div>
+<h2>Calendar sources</h2><p class="muted">Show all three together, or select which calendars appear on the kitchen display and here.</p><div class="calendar-filters" id="calendarFilters"></div><h2>Widgets</h2><div id="widgets"></div>
 <div class="actions"><button id="takeover">Show Shaggy</button><button id="returnHome">Return to dashboard</button></div><p id="saveResult" class="good"></p>
 </article></section>
 <section id="agent" class="tab"><iframe id="agentFrame" src="about:blank" title="Shaggy AI and private browser"></iframe></section>
@@ -62,6 +70,30 @@ main{min-width:0;padding:30px clamp(15px,3vw,50px)}
 </main></div>
 <script>
 const $=s=>document.querySelector(s);let settings={};const modes=['Kitchen','Calendar','Shopping','Photos','Agent','Browser'];
+const CALENDARS=[
+ {label:'Julia',id:'j.c.j.p.hagenaars@gmail.com',color:'#6398b8'},
+ {label:'Imported',id:'qic99udkvnbvgtane90jahftpok9oj6l@import.calendar.google.com',color:'#92aa73'},
+ {label:'Family',id:'94f345dfaa437c1d2570a8d76f180d09e9d7ba2e79dcedf7b2967a6c39378dfd@group.calendar.google.com',color:'#b896ce'}
+];
+function calendarDate(date,zone){
+ const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ return p.year+p.month+p.day;
+}
+function calendarURL(view,selected){
+ const start=calendarDate(new Date(),'Europe/Amsterdam');
+ const current=new Date();const tomorrow=new Date(current.getTime()+86400000);
+ const next=calendarDate(tomorrow,'Europe/Amsterdam');
+ const p=new URLSearchParams({ctz:'Europe/Amsterdam',mode:view,showTitle:'0',showPrint:'0',showTabs:'0',showCalendars:'0',showTz:'0',wkst:'2',bgcolor:'#f7f9f8'});
+ if(view==='AGENDA')p.set('dates',start+'/'+next);
+ selected.forEach(i=>{p.append('src',CALENDARS[i].id);p.append('color',CALENDARS[i].color)});
+ return 'https://calendar.google.com/calendar/embed?'+p;
+}
+function showCalendars(){
+ const selected=settings.calendars?.length?settings.calendars:[0,1,2];
+ for(const [selector,url] of [['#dayAgenda',calendarURL('AGENDA',selected)],['#monthCalendar',calendarURL('MONTH',selected)]]){
+  const frame=$(selector);if(frame&&frame.getAttribute('src')!==url)frame.src=url;
+ }
+}
 const keys={show_clock:'Clock',show_calendar:'Family calendar',show_weather:'Weather',show_jumbo:'Jumbo shopping',show_agent:'AI activity',show_moon:'Moon phase'};
 const clock=()=>{const n=new Date();$('#clock').textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Amsterdam',hour:'2-digit',minute:'2-digit'}).format(n);$('#today').textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Amsterdam',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(n)};clock();setInterval(clock,20000);
 async function api(url,body){let opts={credentials:'same-origin',cache:'no-store'};if(body!==undefined){opts.method='POST';opts.headers={'Content-Type':'application/json','X-Shaggy-OS':'1','X-Shaggy':'1'};opts.body=JSON.stringify(body)}let r=await fetch(url,opts);let data=await r.json().catch(()=>({}));if(!r.ok)throw Error(data.error||'Request failed');return data}
@@ -81,6 +113,9 @@ function render(){
  $('#modes').replaceChildren(...modes.map(m=>{let b=document.createElement('button');b.className=m===settings.mode?'active':'';b.textContent=m;let small=document.createElement('small');small.textContent=m===settings.mode?'Currently displayed':'Set HDMI mode';b.append(small);b.onclick=()=>save({mode:m});return b}));
  $('#widgets').replaceChildren(...Object.entries(keys).map(([key,label])=>{let row=document.createElement('label');row.className='line';let text=document.createElement('span');text.textContent=label;let check=document.createElement('input');check.type='checkbox';check.checked=Boolean(settings[key]);check.onchange=()=>save({[key]:check.checked});row.append(text,check);return row}));
  $('#message').value=settings.message||'';
+ const selected=settings.calendars?.length?settings.calendars:[0,1,2];
+ $('#calendarFilters').replaceChildren(...CALENDARS.map((item,i)=>{let label=document.createElement('label');let checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selected.includes(i);checkbox.onchange=()=>{let next=checkbox.checked?[...selected,i]:selected.filter(n=>n!==i);if(!next.length){checkbox.checked=true;return}save({calendars:next.sort()})};let span=document.createElement('span');span.textContent=item.label;label.append(checkbox,span);return label}));
+ showCalendars();
 }
 async function save(changes){
  try{let res=await api('/api/os/settings',changes);settings=res.settings;render();$('#saveResult').textContent='✓ Saved to kitchen screen'}
