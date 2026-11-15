@@ -139,6 +139,8 @@ def metrics():
             "temperature_c": temperature, "ram_used_pct": ram_used,
             "disk_used_pct": disk_used, "load_1m": load}
 
+ASSETS.update({"/moon/moon.js": "text/javascript; charset=utf-8", "/moon/assets/shaggy-actions.webp": "image/webp", "/moon/assets/moon-lroc.webp": "image/webp"})
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
@@ -210,7 +212,7 @@ class Handler(BaseHTTPRequestHandler):
             cookie = f"shaggy_kiosk={KIOSK_SESSION}; HttpOnly; SameSite=Strict; Path=/"
             return self.send(200, UI_FILE.read_bytes(), "text/html; charset=utf-8", cookie=cookie)
         if route in ASSETS:
-            return self.send(200, UI_FILE.with_name(route[1:]).read_bytes(), ASSETS[route])
+            return self.send(200, (UI_FILE.parent / route[1:]).read_bytes(), ASSETS[route])
         if route == '/reply-audio.js' and self.kiosk_session():
             try:
                 with agent_request(route, timeout=3) as response:

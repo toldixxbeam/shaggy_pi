@@ -105,7 +105,7 @@
     datePanel.append(dayHeader);
     const todaysEvents = events.filter(event => event.first_day<=today && event.last_day>=today);
     const agenda = make('ul','display-agenda'+(todaysEvents.length>9?' dense':''));
-    const limit = compact?12:17;
+    const limit = compact?5:8;
     for (const event of todaysEvents.slice(0,limit)) {
       const row = tint(make('li'),event.source);
       const title = make('div','display-agenda-title');
@@ -128,7 +128,10 @@
       datePanel.append(make('p','display-day-empty',empty));
     }
     if (todaysEvents.length>limit) datePanel.append(make('p','display-day-empty','+'+(todaysEvents.length-limit)+' more today'));
-    root.append(calendar,datePanel);
+    const moonPanel = make('section','display-panel display-moon');
+    moonPanel.setAttribute('aria-label','Shaggy Moon · live lunar phase');
+    moonPanel.append(make('shaggy-moon'));
+    root.append(calendar,datePanel,moonPanel);
     return root;
   }
 
@@ -312,7 +315,12 @@
       if (!force && signature===fingerprint) return;
       fingerprint=signature;
       const compact=root.clientHeight<750 || root.clientWidth<1050;
-      if (mode==='Kitchen') root.replaceChildren(kitchen(data,compact));
+      if (mode==='Kitchen') {
+        const existingMoon=root.querySelector('shaggy-moon');
+        const next=kitchen(data,compact);
+        if(existingMoon) next.querySelector('shaggy-moon').replaceWith(existingMoon);
+        root.replaceChildren(next);
+      }
       if (mode==='Groceries') root.replaceChildren(groceries(data,groceryPage,compact,kiosk?null:(offset,count)=>{
         groceryPage=(groceryPage+offset+count)%count;
         paint(model,true);
