@@ -66,3 +66,15 @@ rm ~/.config/autostart/shaggy-os.desktop
 The previous desktop autostart file (if any) is backed up with a timestamp. The AI browser and its private data remain in `/var/lib/shaggypi`. If another Chromium kiosk autostart exists, disable the old kiosk manually after confirming the new one works to avoid two full-screen browsers.
 
 For diagnostics use `sudo journalctl -u shaggy-os -n 100 --no-pager` and check whether Raspberry Pi OS actually started a graphical desktop for your user. On Lite/headless installations there is no HDMI graphical session to launch the kiosk.
+
+## Raspberry Pi OS Trixie / labwc HDMI fix
+
+Diagnostic evidence: graphical user session and `labwc` were running, HDMI-A connected and the dashboard systemd service active, but no kiosk Chromium process was launched. The previous XDG-only `~/.config/autostart/shaggy-os.desktop` file was not reliably started by labwc. The new installer configures `~/.config/labwc/autostart`, backs up any existing file, preserves the default global desktop startup when creating a new one, and launches `/opt/shaggy-os/start-kiosk.sh` as the desktop user. The launcher waits for the local server, locks against duplicate instances and uses its own Wayland Chromium profile.
+
+Update and reboot from Pi SSH:
+
+```bash
+cd ~/shaggy-pi-build/shaggy_pi && git pull --ff-only && sudo bash scripts/install-os.sh && sudo reboot
+```
+
+After reconnecting, verify `pgrep -af 'shaggy-os-kiosk|start-kiosk'` and the presence of `~/.config/labwc/autostart`. If the HDMI panel is still blank, inspect `journalctl --user -b` and the graphical session environment; don't touch the independent AI browser service.
