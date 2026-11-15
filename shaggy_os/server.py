@@ -25,7 +25,7 @@ TOKEN = TOKEN_FILE.read_text().strip()
 DEFAULT = {"mode": "Kitchen", "message": "Welcome home.", "show_clock": True,
            "show_calendar": True, "show_weather": True, "show_jumbo": True,
            "show_agent": True, "show_moon": True, "theme": "forest",
-           "agent_overlay": False}
+           "agent_overlay": False, "calendars": [0, 1, 2]}
 MODES = ("Kitchen", "Calendar", "Shopping", "Photos", "Agent", "Browser")
 LAST_WRITE = [0.0]
 
@@ -161,6 +161,9 @@ class Handler(BaseHTTPRequestHandler):
                 if k not in DEFAULT: return self.send(400,{"error":"Unknown setting"})
                 if k=="mode":
                     if v not in MODES: return self.send(400,{"error":"Invalid display mode"})
+                elif k=="calendars":
+                    if not isinstance(v,list) or not v or len(v)>3 or any(type(i) is not int or i not in (0,1,2) for i in v) or len(set(v))!=len(v):
+                        return self.send(400,{"error":"Select one or more available calendars"})
                 elif k=="message":
                     if not isinstance(v,str) or len(v)>240: return self.send(400,{"error":"Message too long"})
                 elif k=="theme":
