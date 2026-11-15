@@ -44,7 +44,7 @@ Open `http://127.0.0.1:8791`. Obtain its *separate* private token on Pi SSH with
 sudo cat /var/lib/shaggypi/display-token
 ```
 
-The existing Shaggy AI interface still uses the other local tunnel, `8789:127.0.0.1:8787`. Both can run at once. The Display Studio can change the currently active display mode, update a household announcement, and toggle the Shaggy takeover animation. It also reports CPU temperature, RAM, disk, uptime and agent health. The HDMI screen polls for changes every six seconds.
+The existing Shaggy AI interface still uses the other local tunnel, `8789:127.0.0.1:8787`. Both can run at once. The Display Studio can change the currently active display mode, update a household announcement, and toggle the Shaggy takeover animation. The takeover also appears automatically when the local AI agent reports an active task, then returns to the household view. It also reports CPU temperature, RAM, disk, uptime and agent health. The HDMI screen polls for changes every six seconds.
 
 ## Current feature fidelity
 
